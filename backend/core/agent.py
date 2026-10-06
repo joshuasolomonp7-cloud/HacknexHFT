@@ -144,16 +144,54 @@ class SWEAgent:
         # Initial conversation context
         user_content = f"Repository absolute path: {self.repo_path}\nTask / Issue Description:\n{task_prompt}"
         
-        chat = self.client.chats.create(
-            model=self.model_name,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                tools=get_tools_declarations(),
-                temperature=0.1
-            )
-        )
+        async def safe_send(chat_instance, msg_content):
+            retries = 4
+            delay = 2.0
+            last_err = None
+            for attempt in range(retries):
+                try:
+                    return await asyncio.to_thread(chat_instance.send_message, msg_content)
+                except Exception as exc:
+                    err_str = str(exc)
+                    last_err = exc
+                    if "503" in err_str or "429" in err_str or "UNAVAILABLE" in err_str:
+                        await asyncio.sleep(delay)
+                        delay *= 1.5
+                    else:
+                        raise exc
+            raise last_err
 
-        response = await asyncio.to_thread(chat.send_message, user_content)
+        # Try primary model, fallback if unavailable
+        candidate_models = [self.model_name, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.5-pro"]
+        # deduplicate while preserving order
+        candidate_models = list(dict.fromkeys(candidate_models))
+
+        chat = None
+        response = None
+        for model in candidate_models:
+            try:
+                chat = self.client.chats.create(
+                    model=model,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        tools=get_tools_declarations(),
+                        temperature=0.1
+                    )
+                )
+                response = await safe_send(chat, user_content)
+                self.model_name = model
+                break
+            except Exception as exc:
+                err_msg = str(exc)
+                if ("503" in err_msg or "UNAVAILABLE" in err_msg or "404" in err_msg) and model != candidate_models[-1]:
+                    yield {
+                        "type": "status",
+                        "message": f"Model {model} busy, failing over to {candidate_models[candidate_models.index(model)+1]}..."
+                    }
+                    continue
+                else:
+                    yield {"type": "error", "message": f"Error calling Gemini: {err_msg}"}
+                    return
         
         for iteration in range(1, max_iterations + 1):
             # Check for thoughts/text
@@ -216,8 +254,8 @@ class SWEAgent:
                     )
                 )
 
-            # Send tool response back to Gemini
-            response = await asyncio.to_thread(chat.send_message, tool_responses)
+            # Send tool response back to Gemini with retry
+            response = await safe_send(chat, tool_responses)
 
         yield {
             "type": "complete",
