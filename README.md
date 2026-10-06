@@ -7,7 +7,7 @@
 
 ---
 
-## 📌 1. Project Overview
+##  1. Project Overview
 
 CodeNexus AI is an autonomous, full-stack software engineering agent designed to solve real-world software maintenance challenges. In large repositories containing thousands of lines of code, manually localizing bugs, understanding cross-file dependencies, writing surgical patches, and verifying that no existing workflows are broken is slow and error-prone.
 
@@ -20,7 +20,7 @@ We engineered **CodeNexus AI** to autonomously:
 
 ---
 
-## 🏗️ 2. System Architecture & Data Pipeline
+##  2. System Architecture & Data Pipeline
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -52,7 +52,7 @@ We engineered **CodeNexus AI** to autonomously:
 
 ---
 
-## 🛠️ 3. Technologies & Stack
+##  3. Technologies & Stack
 
 - **Large Language Model**: Google Gemini 3.8 Flash / 2.5 Flash / 1.5 Pro via the official SDK
 - **Backend API & Engine**: Python 3.11, FastAPI, Uvicorn, WebSockets, Pydantic
@@ -61,7 +61,7 @@ We engineered **CodeNexus AI** to autonomously:
 
 ---
 
-## ⚙️ 4. Installation & Setup Guide
+##  4. Installation & Setup Guide
 
 ### Prerequisites
 - Python 3.10 or higher
@@ -101,7 +101,7 @@ npm install
 
 ---
 
-## 🚀 5. How to Run the System
+##  5. How to Run the System
 
 ### Option A: 1-Click Launch (Windows)
 Double-click **`start_all.bat`** in the root directory. It will automatically start both the backend API and frontend UI in dedicated terminal windows.
@@ -122,7 +122,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically st
 
 ---
 
-## 🧪 6. How to Reproduce Demonstrated Results
+## 6. How to Reproduce Demonstrated Results
 
 ### Scenario 1: Python Mathematical Sequence Bug Fix
 1. Open the dashboard at `http://localhost:5173` (or `http://localhost:5174`).
@@ -145,7 +145,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically st
 
 ---
 
-## 📊 7. Scope Note: Minimum Viable Product vs. Stretch Features
+##  7. Scope Note: Minimum Viable Product vs. Stretch Features
 
 | Capability | Status | Description |
 | :--- | :---: | :--- |
@@ -159,7 +159,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically st
 
 ---
 
-## 👥 8. Team Work Distribution
+##  8. Team Work Distribution
 
 | Member | Focus Area | Contributions |
 | :--- | :--- | :--- |
