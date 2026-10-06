@@ -8,7 +8,7 @@
 
 ---
 
-## 💡 1. The Core Idea & Innovation Behind CodeNexus AI
+##  1. Project Overview
 
 ### The Real-World Problem:
 In real-world software engineering, codebases span thousands of lines across multiple files, directories, and test suites. Standard AI code assistants often fail when asked to fix bugs because they:
@@ -26,21 +26,7 @@ We built **CodeNexus AI** around three core engineering pillars:
 
 ---
 
-## 📋 2. Summary for Google Form Submission
-
-When filling out the official [HACKNEX Submission Form](https://forms.gle/KGjkU5u66Va1MDhu5), use the following details:
-
-| Form Field | Content to Submit |
-| :--- | :--- |
-| **Problem Statement** | `HNX26PSI09: AI Software Engineering Agent` |
-| **Project Title** | `CodeNexus AI: Autonomous Software Engineering & Verification Agent` |
-| **Public GitHub Repository** | `https://github.com/joshuasolomonp7-cloud/HacknexHFT` |
-| **Core Innovation / Idea** | Autonomous Re-Act coding agent with AST symbol navigation, surgical line patching, and self-healing test execution feedback loop with zero regressions. |
-| **Key Models & Libraries** | Google Gemini 3.8 Flash, FastAPI, Uvicorn, WebSockets, Python Subprocess Runner, React 18, Vite, Tailwind CSS. |
-
----
-
-## 🏗️ 3. System Architecture & Data Pipeline
+##  2. System Architecture & Data Pipeline
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -72,7 +58,7 @@ When filling out the official [HACKNEX Submission Form](https://forms.gle/KGjkU5
 
 ---
 
-## 🛠️ 4. Technologies & Tools Used
+##  3. Technologies & Stack
 
 - **Large Language Model**: Google Gemini 3.8 Flash / 2.5 Flash via official SDK
 - **Backend Framework**: Python 3.11, FastAPI, Uvicorn, WebSockets, Pydantic
@@ -81,7 +67,7 @@ When filling out the official [HACKNEX Submission Form](https://forms.gle/KGjkU5
 
 ---
 
-## ⚙️ 5. Installation & Setup Guide
+##  4. Installation & Setup Guide
 
 ### Prerequisites
 - Python 3.10+
@@ -121,7 +107,7 @@ npm install
 
 ---
 
-## 🚀 6. How to Run the System
+##  5. How to Run the System
 
 ### Option A: 1-Click Launch (Windows)
 Double-click **`start_all.bat`** in the root directory. It will automatically launch both the backend API server and frontend UI in dedicated terminals.
@@ -142,7 +128,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically la
 
 ---
 
-## 🧪 7. How to Reproduce Demonstrated Results
+## 6. How to Reproduce Demonstrated Results
 
 ### Scenario 1: Python Sequence & Arithmetic Repair
 1. Open the dashboard at `http://localhost:5173` (or `http://localhost:5174`).
@@ -164,7 +150,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically la
 
 ---
 
-## 📊 8. Scope Note: Minimum Viable Product vs. Stretch Features
+##  7. Scope Note: Minimum Viable Product vs. Stretch Features
 
 | Capability | Status | Description |
 | :--- | :---: | :--- |
@@ -178,7 +164,7 @@ Double-click **`start_all.bat`** in the root directory. It will automatically la
 
 ---
 
-## 👥 9. Team Work Distribution (4 Members)
+##  8. Team Work Distribution
 
 | Member | Focus Area | Key Contributions |
 | :--- | :--- | :--- |
