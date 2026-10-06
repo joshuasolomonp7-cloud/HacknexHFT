@@ -1,0 +1,10 @@
+{
+  "name": "js-string-utils",
+  "version": "1.0.0",
+  "description": "String utility library for testing SWE Agent",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "type": "commonjs"
+}

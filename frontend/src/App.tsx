@@ -8,8 +8,10 @@ import {
   CheckCircle2, 
   Cpu, 
   Key, 
-  RefreshCw,
-  Zap
+  Zap,
+  ShieldCheck,
+  Code2,
+  FileCode2
 } from 'lucide-react';
 import { FileTree } from './components/FileTree';
 import { AgentTimeline, TimelineEvent } from './components/AgentTimeline';
@@ -19,6 +21,19 @@ import { TestResults } from './components/TestResults';
 const API_BASE = 'http://localhost:8000';
 const WS_BASE = 'ws://localhost:8000';
 
+const PRESETS = [
+  {
+    label: 'Python MathUtils (Fibonacci Bug)',
+    repoName: 'math_utils',
+    prompt: 'The fibonacci function in calculator.py has a bug where fibonacci(1) returns 0 instead of 1, causing unit tests to fail. Fix the bug, keep all other arithmetic working, and make sure all tests pass.'
+  },
+  {
+    label: 'JavaScript StringUtils (Slugify Bug)',
+    repoName: 'js_string_utils',
+    prompt: 'The slugify function in index.js currently replaces spaces with underscores and misses lowercasing. Update slugify to lowercase the input and replace spaces with hyphens (-) so that all tests in test/index.test.js pass with zero regressions.'
+  }
+];
+
 export function App() {
   const [repos, setRepos] = useState<any[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string>('');
@@ -26,11 +41,10 @@ export function App() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   
-  const [taskPrompt, setTaskPrompt] = useState<string>(
-    'The fibonacci function in calculator.py has a bug where fibonacci(1) returns 0 instead of 1, causing unit tests to fail. Fix the bug, keep all other arithmetic working, and make sure all tests pass.'
-  );
+  const [taskPrompt, setTaskPrompt] = useState<string>(PRESETS[0].prompt);
   const [apiKey, setApiKey] = useState<string>('');
   const [modelName, setModelName] = useState<string>('gemini-2.5-flash');
+  const [isSupervised, setIsSupervised] = useState<boolean>(false);
   
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -83,6 +97,14 @@ export function App() {
           setFileContent(null);
         }
       });
+  };
+
+  const applyPreset = (preset: typeof PRESETS[0]) => {
+    const targetRepo = repos.find((r) => r.name === preset.repoName);
+    if (targetRepo) {
+      handleSelectRepo(targetRepo.path);
+    }
+    setTaskPrompt(preset.prompt);
   };
 
   const runTestManually = () => {
@@ -171,12 +193,13 @@ export function App() {
             <h1 className="font-bold text-sm text-white tracking-wide flex items-center gap-2">
               AutoSWE Agent <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">HACKNEX 2026</span>
             </h1>
-            <p className="text-[11px] text-gray-400">Autonomous AI Software Engineering Engine</p>
+            <p className="text-[11px] text-gray-400">Autonomous AI Software Engineering Engine (Python + JavaScript)</p>
           </div>
         </div>
 
         {/* Top Controls */}
         <div className="flex items-center gap-3">
+          {/* Target Repo */}
           <div className="flex items-center gap-2 bg-[#0d1117] px-3 py-1 rounded border border-[#30363d] text-xs">
             <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
             <select
@@ -192,6 +215,7 @@ export function App() {
             </select>
           </div>
 
+          {/* Model Selection */}
           <div className="flex items-center gap-2 bg-[#0d1117] px-3 py-1 rounded border border-[#30363d] text-xs">
             <Cpu className="w-3.5 h-3.5 text-purple-400" />
             <select
@@ -205,6 +229,7 @@ export function App() {
             </select>
           </div>
 
+          {/* API Key */}
           <div className="flex items-center gap-1.5 bg-[#0d1117] px-3 py-1 rounded border border-[#30363d] text-xs">
             <Key className="w-3.5 h-3.5 text-yellow-400" />
             <input
@@ -217,6 +242,36 @@ export function App() {
           </div>
         </div>
       </header>
+
+      {/* Demo Preset Bar */}
+      <div className="flex items-center gap-3 px-6 py-2 bg-[#0d1117] border-b border-[#30363d] text-xs">
+        <span className="text-gray-400 font-medium flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Demo Benchmarks:
+        </span>
+        {PRESETS.map((p, idx) => (
+          <button
+            key={idx}
+            onClick={() => applyPreset(p)}
+            className="bg-[#161b22] hover:bg-[#21262d] text-gray-300 hover:text-white px-2.5 py-1 rounded border border-[#30363d] transition-colors flex items-center gap-1.5"
+          >
+            <FileCode2 className="w-3 h-3 text-accent" />
+            <span>{p.label}</span>
+          </button>
+        ))}
+
+        <div className="ml-auto flex items-center gap-2">
+          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 select-none">
+            <input
+              type="checkbox"
+              checked={isSupervised}
+              onChange={(e) => setIsSupervised(e.target.checked)}
+              className="rounded bg-[#0d1117] border-[#30363d] text-purple-600 focus:ring-0 cursor-pointer"
+            />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-[11px]">Human-in-the-Loop Mode</span>
+          </label>
+        </div>
+      </div>
 
       {/* Main 3-Column Layout */}
       <div className="flex-1 grid grid-cols-12 gap-3 p-3 overflow-hidden">
@@ -233,7 +288,7 @@ export function App() {
           <div className="h-3/5 bg-[#161b22] border border-[#30363d] rounded-lg p-3 flex flex-col">
             <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-[#30363d] text-xs font-semibold text-gray-300">
               <Zap className="w-3.5 h-3.5 text-yellow-400" />
-              <span>Issue / Feature Request</span>
+              <span>Issue / Feature Specification</span>
             </div>
 
             <textarea
