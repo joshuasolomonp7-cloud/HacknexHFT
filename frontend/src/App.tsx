@@ -191,9 +191,9 @@ export function App() {
           </div>
           <div>
             <h1 className="font-bold text-sm text-white tracking-wide flex items-center gap-2">
-              AutoSWE Agent <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">HACKNEX 2026</span>
+              CodeNexus AI <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">HACKNEX 2026</span>
             </h1>
-            <p className="text-[11px] text-gray-400">Autonomous AI Software Engineering Engine (Python + JavaScript)</p>
+            <p className="text-[11px] text-gray-400">Autonomous Software Engineering & Verification Agent</p>
           </div>
         </div>
 
