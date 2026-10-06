@@ -3,34 +3,54 @@
 **HACKNEX 2026 | Internal Qualifier Round**  
 **Problem Statement HNX26PSI09**: AI Software Engineering Agent  
 **Domain**: Generative AI · Autonomous Systems · Software Engineering  
-**Developed by**: Team HacknexHFT
+**Developed by**: Team HacknexHFT  
+**Submission Portal**: [Google Form Submission Link](https://forms.gle/KGjkU5u66Va1MDhu5)
 
 ---
 
-## 📌 1. Project Overview
+## 💡 1. The Core Idea & Innovation Behind CodeNexus AI
 
-CodeNexus AI is an autonomous, full-stack software engineering agent designed to solve real-world software maintenance challenges. In large repositories containing thousands of lines of code, manually localizing bugs, understanding cross-file dependencies, writing surgical patches, and verifying that no existing workflows are broken is slow and error-prone.
+### The Real-World Problem:
+In real-world software engineering, codebases span thousands of lines across multiple files, directories, and test suites. Standard AI code assistants often fail when asked to fix bugs because they:
+1. Try to rewrite entire files, introducing hallucinations and breaking existing functionality (regressions).
+2. Cannot run the test suite to verify whether their changes actually solved the problem.
+3. Lack the ability to learn from compiler errors or test failures.
 
-We engineered **CodeNexus AI** to autonomously:
-1. **Analyze and Navigate Real Codebases**: Ingest multi-file project structures, parse syntax trees, and perform deep symbol searches across modules.
-2. **Localize Faults & Requirements**: Reason over issue descriptions, isolate root-cause failure points, and plan minimal edits.
-3. **Execute Surgical Code Modifications**: Apply targeted line-level patches without destructive whole-file rewrites.
-4. **Self-Healing Verification Loop**: Execute automated unit and regression test suites in real-time. If tests fail, CodeNexus captures execution tracebacks, reflects on the failure reason, and autonomously iterates until 100% of tests pass with zero regressions.
-5. **Interactive Developer Workbench**: Provide an intuitive web dashboard with real-time thought streaming, side-by-side code inspection, and instant test verification status.
+### Our Solution & Key Innovations:
+We built **CodeNexus AI** around three core engineering pillars:
+
+* **1. Multi-File Symbol Discovery & AST Navigation**: Instead of dumping entire repositories into the model, CodeNexus indexes directory structures and searches symbols, functions, and imports to understand caller-callee relationships.
+* **2. Surgical Line-Level Patch Engine**: CodeNexus applies minimal, localized search-and-replace patches (e.g. changing 2 lines rather than rewriting a 500-line file), guaranteeing precision and preserving untouched logic.
+* **3. Self-Healing Test-Driven Verification Loop**: CodeNexus automatically executes the test suite in an isolated subprocess sandbox. If tests fail, it intercepts the exact stack trace and error assertions, reasons about *why* it failed, and autonomously refines the code until **100% of unit tests pass with zero regressions**.
+* **4. Transparent Re-Act Developer Dashboard**: A full-stack web workbench that streams the agent's step-by-step thoughts, tool invocations, code diffs, and test results in real-time over WebSockets.
 
 ---
 
-## 🏗️ 2. System Architecture & Data Pipeline
+## 📋 2. Summary for Google Form Submission
+
+When filling out the official [HACKNEX Submission Form](https://forms.gle/KGjkU5u66Va1MDhu5), use the following details:
+
+| Form Field | Content to Submit |
+| :--- | :--- |
+| **Problem Statement** | `HNX26PSI09: AI Software Engineering Agent` |
+| **Project Title** | `CodeNexus AI: Autonomous Software Engineering & Verification Agent` |
+| **Public GitHub Repository** | `https://github.com/joshuasolomonp7-cloud/HacknexHFT` |
+| **Core Innovation / Idea** | Autonomous Re-Act coding agent with AST symbol navigation, surgical line patching, and self-healing test execution feedback loop with zero regressions. |
+| **Key Models & Libraries** | Google Gemini 3.8 Flash, FastAPI, Uvicorn, WebSockets, Python Subprocess Runner, React 18, Vite, Tailwind CSS. |
+
+---
+
+## 🏗️ 3. System Architecture & Data Pipeline
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        CODENEXUS AI ARCHITECTURE                       │
 ├───────────────────────────────┬────────────────────────────────────────┤
-│     FRONTEND DASHBOARD        │        BACKEND AGENT ENGINE            │
+│     FRONTEND WORKBENCH        │        BACKEND AGENT CORE              │
 │   (React 18 + Tailwind CSS)   │       (FastAPI + Python Core)          │
 ├───────────────────────────────┼────────────────────────────────────────┤
 │ • Repository File Tree        │ • Symbol & AST Workspace Tools         │
-│ • Real-time Re-Act Stream     │ • Re-Act Autonomous Reasoning Loop    │
+│ • Real-time Re-Act Stream     │ • Multi-turn Reasoning Engine          │
 │ • Live Code & Diff Viewer     │ • Multi-Model Failover Orchestration   │
 │ • Test Suite Regression Matrix│ • Subprocess Execution Sandbox         │
 └───────────────────────────────┴────────────────────────────────────────┘
@@ -38,35 +58,35 @@ We engineered **CodeNexus AI** to autonomously:
                                     ▼
                       ┌───────────────────────────┐
                       │    LLM REASONING ENGINE   │
-                      │  Google Gemini Multi-turn │
+                      │   Google Gemini Platform  │
                       └───────────────────────────┘
 ```
 
-### Data Pipeline & Execution Lifecycle:
-1. **Repository Ingestion**: User selects a target repository. The backend indexes directory structures, source code, and test manifests.
-2. **Issue Specification**: The developer submits a bug report or feature request via the UI.
-3. **Reasoning & Tool Execution**: CodeNexus analyzes the codebase using targeted tools (`list_files`, `view_file`, `search_code`).
-4. **Patch Application**: CodeNexus generates precise line replacements targeting only the necessary logic.
-5. **Regression Testing & Reflection**: The subprocess runner executes test suites (`pytest`, `unittest`, or Node.js `node:test`). If a regression occurs, the stack trace is fed back into the reasoning loop for immediate correction.
-6. **Live Streaming**: Every thought, tool invocation, file edit, and test output is streamed in real-time to the frontend over WebSockets.
+### End-to-End Data Pipeline:
+1. **Input Ingestion**: The developer selects a repository and inputs an issue description or feature specification.
+2. **Repository Exploration**: CodeNexus scans directory trees and identifies relevant files and test fixtures using `list_files`, `view_file`, and `search_code`.
+3. **Hypothesis & Patch Planning**: The agent determines the root cause of the bug and creates a surgical line replacement.
+4. **Execution & Verification**: The sandbox runs the test suite (`python -m unittest` or `node --test`).
+5. **Self-Correction (If needed)**: If any assertions fail, the traceback is fed back into the reasoning loop for iterative refinement.
+6. **Live Telemetry**: Thoughts, tool calls, diffs, and final test passes are streamed over WebSockets to the web dashboard.
 
 ---
 
-## 🛠️ 3. Technologies & Stack
+## 🛠️ 4. Technologies & Tools Used
 
-- **Large Language Model**: Google Gemini 3.8 Flash / 2.5 Flash / 1.5 Pro via the official SDK
-- **Backend API & Engine**: Python 3.11, FastAPI, Uvicorn, WebSockets, Pydantic
-- **Testing & Sandbox**: Subprocess Test Runner supporting Python (`unittest`, `pytest`) and JavaScript (`node:test`, `Jest`)
-- **Frontend Dashboard**: React 18, Vite, TypeScript, Tailwind CSS, Lucide Icons
+- **Large Language Model**: Google Gemini 3.8 Flash / 2.5 Flash via official SDK
+- **Backend Framework**: Python 3.11, FastAPI, Uvicorn, WebSockets, Pydantic
+- **Execution & Test Sandbox**: Python Subprocess (`unittest`, `pytest`) & Node.js (`node:test`, `Jest`)
+- **Frontend Dashboard**: React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons
 
 ---
 
-## ⚙️ 4. Installation & Setup Guide
+## ⚙️ 5. Installation & Setup Guide
 
 ### Prerequisites
-- Python 3.10 or higher
+- Python 3.10+
 - Node.js 18+ and npm
-- Windows / Linux / macOS compatible
+- Windows / Linux / macOS
 
 ### Step 1: Clone Repository
 ```bash
@@ -88,7 +108,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the `backend/` directory with your Gemini API key:
+Create a `.env` file in the `backend/` directory:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
@@ -101,12 +121,12 @@ npm install
 
 ---
 
-## 🚀 5. How to Run the System
+## 🚀 6. How to Run the System
 
 ### Option A: 1-Click Launch (Windows)
-Double-click **`start_all.bat`** in the root directory. It will automatically start both the backend API and frontend UI in dedicated terminal windows.
+Double-click **`start_all.bat`** in the root directory. It will automatically launch both the backend API server and frontend UI in dedicated terminals.
 
-### Option B: Manual Launch
+### Option B: Manual Terminal Launch
 1. **Start Backend**:
    ```bash
    cd backend
@@ -122,46 +142,45 @@ Double-click **`start_all.bat`** in the root directory. It will automatically st
 
 ---
 
-## 🧪 6. How to Reproduce Demonstrated Results
+## 🧪 7. How to Reproduce Demonstrated Results
 
-### Scenario 1: Python Mathematical Sequence Bug Fix
+### Scenario 1: Python Sequence & Arithmetic Repair
 1. Open the dashboard at `http://localhost:5173` (or `http://localhost:5174`).
-2. Click the top benchmark preset: **`Python MathUtils (Fibonacci Bug)`**.
-3. Click **"Run Tests"** on the right panel to observe the initial failing test case:
+2. Click the preset: **`Python MathUtils (Fibonacci Bug)`**.
+3. Click **"Run Tests"** on the right panel to observe the initial test failure:
    ```
    FAIL: test_fibonacci_base_cases (AssertionError: 0 != 1)
    ```
-4. Click **"Run SWE Agent"**.
-5. Watch the live execution stream:
+4. Click **"Run SWE Agent"**:
    - CodeNexus inspects `calculator.py` and `tests/test_calculator.py`.
-   - Localizes the base-case error at line 23.
-   - Applies a surgical patch (`if n == 1: return 1`).
-   - Re-runs the test suite and verifies **`ALL TESTS PASSED`** with zero regressions.
+   - Identifies the base condition bug at line 23 (`if n == 1: return 0`).
+   - Applies the surgical fix (`if n == 1: return 1`).
+   - Re-runs tests and verifies **`ALL TESTS PASSED`** with zero regressions.
 
-### Scenario 2: JavaScript String Formatting Bug Fix
-1. Click the benchmark preset: **`JavaScript StringUtils (Slugify Bug)`**.
-2. Click **"Run Tests"** $\rightarrow$ see the failure: `AssertionError: 'Hello_World' !== 'hello-world'`.
-3. Click **"Run SWE Agent"** $\rightarrow$ CodeNexus updates `slugify` to lowercase and use hyphens, validating that all Node test suites pass.
+### Scenario 2: JavaScript / Node.js String Formatting Bug Fix
+1. Click the preset: **`JavaScript StringUtils (Slugify Bug)`**.
+2. Click **"Run Tests"** $\rightarrow$ see failing assertion: `AssertionError: 'Hello_World' !== 'hello-world'`.
+3. Click **"Run SWE Agent"** $\rightarrow$ CodeNexus modifies `slugify` to lowercase and use hyphens, and validates 100% test success.
 
 ---
 
-## 📊 7. Scope Note: Minimum Viable Product vs. Stretch Features
+## 📊 8. Scope Note: Minimum Viable Product vs. Stretch Features
 
 | Capability | Status | Description |
 | :--- | :---: | :--- |
-| **Autonomous Re-Act Loop** | ✅ Implemented | Step-by-step reasoning, tool dispatch, and observation handling |
+| **Autonomous Re-Act Loop** | ✅ Implemented | Multi-turn reasoning, tool execution, and reflection |
 | **Multi-Language Testing** | ✅ Implemented | Subprocess execution supporting Python and JavaScript test suites |
 | **Self-Healing Verification** | ✅ Implemented | Traceback reflection and iterative self-correction upon test failures |
 | **Interactive Developer UI** | ✅ Implemented | Real-time WebSocket streaming, file tree explorer, and test matrix |
-| **Multi-Model Failover** | ✅ Implemented | Resilient exponential backoff with multi-model fallback |
+| **Multi-Model Failover** | ✅ Implemented | Resilient exponential backoff with automatic fallback across models |
 | **Human-in-the-Loop Mode** | 🌟 Stretch Goal | Supervised approval flow for sensitive production modifications |
 | **Containerized Sandboxing** | 🌟 Stretch Goal | Ephemeral Docker container isolation for untrusted repositories |
 
 ---
 
-## 👥 8. Team Work Distribution
+## 👥 9. Team Work Distribution (4 Members)
 
-| Member | Focus Area | Contributions |
+| Member | Focus Area | Key Contributions |
 | :--- | :--- | :--- |
 | **Team Member 1** | Backend Lead & Agent Core | Re-Act reasoning loop, Gemini SDK integration, multi-model failover |
 | **Team Member 2** | Backend Infra & Testing | Workspace tools, AST search, Subprocess test execution sandbox |
