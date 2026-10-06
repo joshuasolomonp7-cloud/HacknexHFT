@@ -27,7 +27,7 @@ SAMPLE_REPOS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "samp
 class RunRequest(BaseModel):
     repo_path: str
     task_prompt: str
-    model_name: Optional[str] = "gemini-2.5-flash"
+    model_name: Optional[str] = "gemini-3.8-flash"
     api_key: Optional[str] = None
 
 @app.get("/api/health")

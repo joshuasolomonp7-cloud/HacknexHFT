@@ -90,7 +90,7 @@ def get_tools_declarations():
     ]
 
 class SWEAgent:
-    def __init__(self, repo_path: str, model_name: str = "gemini-2.5-flash", api_key: str = None):
+    def __init__(self, repo_path: str, model_name: str = "gemini-3.8-flash", api_key: str = None):
         self.repo_path = os.path.abspath(repo_path)
         self.model_name = model_name
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")

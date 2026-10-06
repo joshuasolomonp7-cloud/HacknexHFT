@@ -43,7 +43,7 @@ export function App() {
   
   const [taskPrompt, setTaskPrompt] = useState<string>(PRESETS[0].prompt);
   const [apiKey, setApiKey] = useState<string>('');
-  const [modelName, setModelName] = useState<string>('gemini-2.5-flash');
+  const [modelName, setModelName] = useState<string>('gemini-3.8-flash');
   const [isSupervised, setIsSupervised] = useState<boolean>(false);
   
   const [events, setEvents] = useState<TimelineEvent[]>([]);
