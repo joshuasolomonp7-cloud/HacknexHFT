@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, FileCode, CheckCircle2 } from 'lucide-react';
+import { Folder, FileCode } from 'lucide-react';
 
 interface FileTreeProps {
   files: string[];
@@ -7,19 +7,17 @@ interface FileTreeProps {
   onSelectFile: (file: string) => void;
 }
 
+const renderFileIcon = (fileName: string, isSelected: boolean) => {
+  const iconColor = isSelected ? "text-white" : "text-[#888888] group-hover:text-white";
+  return <FileCode className={`w-3.5 h-3.5 shrink-0 transition-colors ${iconColor}`} />;
+};
+
 export const FileTree: React.FC<FileTreeProps> = ({ files, selectedFile, onSelectFile }) => {
   return (
-    <div className="flex flex-col h-full bg-[#161b22] border border-[#30363d] rounded-lg p-3">
-      <div className="flex items-center gap-2 pb-2 mb-2 border-b border-[#30363d] text-sm font-semibold text-gray-300">
-        <Folder className="w-4 h-4 text-accent" />
-        <span>Repository Files</span>
-        <span className="ml-auto text-xs bg-[#21262d] px-2 py-0.5 rounded text-gray-400">
-          {files.length}
-        </span>
-      </div>
-      <div className="flex-1 overflow-y-auto space-y-1 text-sm">
+    <div className="flex flex-col h-full bg-[#000000] text-[#cccccc] select-none text-xs">
+      <div className="flex-1 overflow-y-auto py-1">
         {files.length === 0 ? (
-          <div className="text-xs text-gray-500 py-4 text-center">No repository loaded</div>
+          <div className="text-[11px] text-[#666666] py-4 text-center">No files found</div>
         ) : (
           files.map((file) => {
             const isSelected = selectedFile === file;
@@ -27,14 +25,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ files, selectedFile, onSelec
               <button
                 key={file}
                 onClick={() => onSelectFile(file)}
-                className={`w-full text-left px-2.5 py-1.5 rounded flex items-center gap-2 text-xs transition-colors ${
+                className={`group relative w-full text-left pl-4 pr-2 py-1 flex items-center gap-2 text-[12px] transition-colors ${
                   isSelected
-                    ? 'bg-[#1f6feb]/20 text-[#58a6ff] border border-[#1f6feb]/40'
-                    : 'text-gray-300 hover:bg-[#21262d] hover:text-white'
+                    ? 'bg-[#0F2B5C] text-white font-medium'
+                    : 'text-[#cccccc] hover:bg-[#111111] hover:text-white'
                 }`}
               >
-                <FileCode className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                <span className="truncate">{file}</span>
+                {/* 2px solid neon strip on the absolute left boundary */}
+                {isSelected && (
+                  <span className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#2563EB] shadow-[0_0_8px_#2563EB]" />
+                )}
+                {renderFileIcon(file, isSelected)}
+                <span className="truncate tracking-tight font-sans">{file}</span>
               </button>
             );
           })
@@ -43,3 +45,5 @@ export const FileTree: React.FC<FileTreeProps> = ({ files, selectedFile, onSelec
     </div>
   );
 };
+
+
