@@ -38,8 +38,12 @@ import { AgentTimeline, TimelineEvent } from './components/AgentTimeline';
 import { CodeViewer } from './components/CodeViewer';
 import { TestResults } from './components/TestResults';
 
-const API_BASE = 'http://localhost:8000';
-const WS_BASE = 'ws://localhost:8000';
+const API_BASE = typeof window !== 'undefined' && window.location.port === '8000' 
+  ? window.location.origin 
+  : 'http://localhost:8000';
+const WS_BASE = typeof window !== 'undefined' && window.location.port === '8000'
+  ? window.location.origin.replace(/^http/, 'ws')
+  : 'ws://localhost:8000';
 
 const PRESETS = [
   {

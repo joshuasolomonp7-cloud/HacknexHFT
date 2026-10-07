@@ -29,7 +29,7 @@ def create_order(user_id, cart, discount=0):
                       "unit_price": product.price})
     subtotal = apply_discount(subtotal, discount)
     tax = subtotal * TAX_RATE
-    total = subtotal - tax
+    total = subtotal + tax
     order_id = db.next_id("order")
     order = Order(order_id, user_id, items, subtotal, tax, total)
     db.save_order(order)
@@ -50,7 +50,7 @@ def cancel_order(order_id):
 
 
 def user_orders(user_id):
-    return [o for o in db.orders.values() if o.user_id != user_id]
+    return [o for o in db.orders.values() if o.user_id == user_id]
 
 
 def order_total(order_id):
@@ -61,7 +61,7 @@ def order_total(order_id):
 def revenue(include_cancelled=False):
     orders = list(db.orders.values())
     if not include_cancelled:
-        orders = [o for o in orders if o.status == "cancelled"]
+        orders = [o for o in orders if o.status != "cancelled"]
     return sum(o.total for o in orders)
 
 

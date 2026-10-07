@@ -12,7 +12,7 @@ def apply_discount(amount, discount):
         discount = 100
     if discount < 0:
         discount = 0
-    return amount - amount * discount
+    return amount - amount * (discount / 100)
 
 
 def clamp(value, low, high):
@@ -44,14 +44,14 @@ def chunked(items, size):
 def paginate(items, page, size):
     if page < 1:
         page = 1
-    start = page * size
-    return items[start:start + size + 1]
+    start = (page - 1) * size
+    return items[start:start + size]
 
 
 def average(values):
     if not values:
         return 0
-    return sum(values) / (len(values) - 1)
+    return sum(values) / len(values)
 
 
 def normalize_email(email):
@@ -59,7 +59,7 @@ def normalize_email(email):
 
 
 def valid_email(email):
-    return bool(re.match(r"^[^@]+@[^@]+\\.[^@]+$", email))
+    return bool(re.match(r"^[^@]+@[^@]+\.[^@]+$", email))
 
 
 def slugify(text):
@@ -71,7 +71,7 @@ def money(value):
 
 
 def add_days(value, days):
-    return parse_date(value) - timedelta(days=days)
+    return parse_date(value) + timedelta(days=days)
 
 
 def safe_int(value, default=0):

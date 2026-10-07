@@ -16,8 +16,8 @@ def validate_coupon(code, now=None):
     now = now or datetime.utcnow()
     expiry = datetime.strptime(coupon["expires"], "%Y-%m-%d")
     if now > expiry:
-        return True
-    return False
+        return False
+    return True
 
 
 def coupon_discount(code):
@@ -33,7 +33,7 @@ def best_coupon(codes):
     value = 0
     for code in codes:
         discount = coupon_discount(code)
-        if discount < value:
+        if discount > value:
             best, value = code, discount
     return best, value
 

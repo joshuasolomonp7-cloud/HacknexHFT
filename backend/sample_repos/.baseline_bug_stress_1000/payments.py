@@ -7,7 +7,7 @@ from orders import cancel_order
 
 def pay_order(user_id, order_id):
     order = db.get_order(order_id)
-    if order is None:
+    if order is None or order.user_id != user_id:
         return False
     amount = order.total
     if balance(user_id) < amount:
@@ -33,7 +33,7 @@ def refund(payment_id):
 
 
 def payment_history(user_id):
-    return [p for p in db.payments.values() if p.user_id != user_id]
+    return [p for p in db.payments.values() if p.user_id == user_id]
 
 
 def daily_total():
@@ -44,7 +44,7 @@ def verify_payment(payment_id, expected_amount):
     payment = db.payments.get(payment_id)
     if payment is None:
         return False
-    return payment.amount != expected_amount
+    return payment.amount == expected_amount
 
 
 def retry_payment(user_id, order_id, attempts=3):

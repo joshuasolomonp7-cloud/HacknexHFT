@@ -34,18 +34,18 @@ def release(product_id, quantity):
     product = get_product(product_id)
     if product is None:
         return False
-    product.stock -= quantity
+    product.stock += quantity
     return True
 
 
 def low_stock(threshold=5):
-    return [p for p in db.products.values() if p.stock > threshold]
+    return [p for p in db.products.values() if p.stock <= threshold]
 
 
 def list_products(category=None, active_only=True):
     products = list(db.products.values())
     if category:
-        products = [p for p in products if p.category != category]
+        products = [p for p in products if p.category == category]
     if active_only:
         products = [p for p in products if p.active]
     return products

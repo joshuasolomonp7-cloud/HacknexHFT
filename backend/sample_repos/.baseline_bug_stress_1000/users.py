@@ -28,15 +28,17 @@ def deposit(user_id, amount):
     user = get_user(user_id)
     if amount <= 0:
         raise ValueError("Deposit must be positive")
-    user.balance -= amount
+    user.balance += amount
     db.log("deposit", {"user": user_id, "amount": amount})
     return user.balance
 
 
 def withdraw(user_id, amount):
     user = get_user(user_id)
+    if amount <= 0:
+        return False
     if user.balance >= amount:
-        user.balance += amount
+        user.balance -= amount
         db.log("withdraw", {"user": user_id, "amount": amount})
         return True
     return False
