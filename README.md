@@ -52,51 +52,51 @@ Unlike standard AI coding assistants that blindly generate code, **CodeNexus AI*
 
 ---
 
-## ✨ 2. Key Features
+##  2. Key Features
 
-### 🧠 AST Code Intelligence (Not Text Search)
+###  AST Code Intelligence (Not Text Search)
 - Uses Python's native `ast.NodeVisitor` to parse source code into **Abstract Syntax Trees**
 - Indexes every class, function, method, argument, docstring, and import across the entire repository
 - Provides `find_symbol`, `find_callers`, and `analyze_blast_radius` tools to the agent
 - **Zero hallucination** — the agent navigates real code structure, not guessed line numbers
 
-### 💥 Blast Radius Impact Analysis
+###  Blast Radius Impact Analysis
 - Before modifying any function, computes the **change impact** across the entire codebase
 - Identifies all direct callers, affected production files, and test suites
 - Assigns a risk score: **LOW (Safe)** / **MEDIUM (Moderate)** / **HIGH (Critical)**
 - Enables the agent to know what could break *before* touching code
 
-### ✂️ Surgical Line-Level Patching
+###  Surgical Line-Level Patching
 - Replaces **only** the exact targeted lines using `edit_file_replace`
 - Preserves all surrounding code, comments, and formatting untouched
 - No full-file rewrites — minimizes diff size and regression risk
 
-### 🔁 Git Transactional Snapshot & Rollback
+###  Git Transactional Snapshot & Rollback
 - Takes a git snapshot **before** every patch attempt
 - If tests fail after patching → **automatic rollback** to the clean state
 - Every run generates patch quality metrics: precision grade, minimality score, lines changed
 
-### 🧪 Multi-Language Test Execution
+###  Multi-Language Test Execution
 - Auto-detects and runs test suites: Python (`unittest`, `pytest`), JavaScript (`node:test`, `Jest`)
 - Captures stdout, stderr, and exit codes in a controlled subprocess sandbox
 - Enforces 45-second execution timeout to prevent infinite loops
 
-### 🌐 Dual Interface: Web Dashboard + Terminal CLI
+###  Dual Interface: Web Dashboard + Terminal CLI
 - **Interactive Dashboard** (`http://localhost:8000`): Real-time WebSocket streaming of agent thoughts, tool invocations, and test results
 - **Headless CLI** (`python codenexus-cli.py`): Run against any project folder from the terminal
 
-### 🛡️ Fail-Safe Dual Engine Mode
+###  Fail-Safe Dual Engine Mode
 - **Live Mode**: Real-time Gemini API reasoning with multi-model auto-failover (`gemini-2.5-flash` → `gemini-3.1-pro-preview` → `gemini-1.5-flash` → `gemini-1.5-pro`)
 - **Autonomous Mode**: Offline AST-driven benchmark engine — works with zero API keys, never crashes during live demos
 
-### 📊 1000-Line Bug Stress Benchmark
+###  1000-Line Bug Stress Benchmark
 - Official HACKNEX stress benchmark: **20 files**, **1,000+ lines**, **28 unit tests**
 - Agent repairs **25 defects across 8 interconnected modules** autonomously
 - Achieves **28/28 tests passing (100% success rate)** with zero regressions
 
 ---
 
-## 🏗️ 3. System Architecture
+##  3. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
@@ -128,7 +128,7 @@ Unlike standard AI coding assistants that blindly generate code, **CodeNexus AI*
 
 ---
 
-## 🔬 4. AST Code Intelligence Engine
+##  4. AST Code Intelligence Engine
 
 The AST Engine (`backend/tools/ast_engine.py`) replaces naive text search with genuine structural code understanding:
 
@@ -155,7 +155,7 @@ analyze_blast_radius("valid_email")
 
 ---
 
-## 💥 5. Blast Radius Impact Analysis
+##  5. Blast Radius Impact Analysis
 
 Before editing any code, the agent calculates **what could break**:
 
@@ -179,7 +179,7 @@ Risk Level       : MEDIUM [MODERATE]
 
 ---
 
-## 🛠️ 6. Technology Stack
+##  6. Technology Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -193,7 +193,7 @@ Risk Level       : MEDIUM [MODERATE]
 
 ---
 
-## ⚙️ 7. Installation & Setup
+##  7. Installation & Setup
 
 ### Step 1: Clone Repository
 ```bash
@@ -229,7 +229,7 @@ npm run build
 
 ---
 
-## 🚀 8. Running the System
+##  8. Running the System
 
 ### Option A: Single Command (Recommended)
 ```bash
@@ -258,7 +258,7 @@ cd frontend && npm run dev
 
 ---
 
-## 🧪 9. Benchmark Results
+##  9. Benchmark Results
 
 ### Benchmark 1: Bug Stress 1000 (Official HACKNEX Stress Test)
 
@@ -309,7 +309,7 @@ cd frontend && npm run dev
 
 ---
 
-## 📊 10. Feature Status Matrix
+##  10. Feature Status Matrix
 
 | Feature | Status | Description |
 |---------|:------:|-------------|
@@ -331,7 +331,7 @@ cd frontend && npm run dev
 
 ---
 
-## 📋 11. Submission Information
+##  11. Submission Information
 
 | Field | Value |
 |-------|-------|
@@ -344,7 +344,7 @@ cd frontend && npm run dev
 
 ---
 
-## 👥 12. Team Contributions
+##  12. Team Contributions
 
 | Member | Focus Area | Key Contributions |
 |--------|-----------|-------------------|
