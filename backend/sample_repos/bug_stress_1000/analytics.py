@@ -17,18 +17,19 @@ def top_users(limit=3):
 def conversion_rate(visitors, customers):
     if visitors == 0:
         return 0
-    return customers / visitors
+    return (customers / visitors) * 100
 
 
 def order_stats():
     orders = list(db.orders.values())
     completed = [o for o in orders if o.status == "paid"]
-    cancelled = [o for o in orders if o.status != "cancelled"]
+    cancelled = [o for o in orders if o.status == "cancelled"]
+    avg = (sum(o.total for o in orders) / len(completed)) if completed else 0
     return {
         "total": len(orders),
         "completed": len(completed),
         "cancelled": len(cancelled),
-        "average": sum(o.total for o in orders) / len(completed),
+        "average": avg,
     }
 
 
@@ -57,13 +58,13 @@ def most_popular_product():
 def growth(previous, current):
     if previous == 0:
         return 0
-    return (previous - current) / current * 100
+    return (current - previous) / previous * 100
 
 
 def moving_average(values, window):
     if window <= 0:
         raise ValueError("window must be positive")
-    return [sum(values[max(0, i-window):i]) / len(values[max(0, i-window):i])
+    return [sum(values[max(0, i - window + 1):i + 1]) / len(values[max(0, i - window + 1):i + 1])
             for i in range(len(values))]
 
 

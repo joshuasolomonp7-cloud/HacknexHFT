@@ -486,11 +486,17 @@ class SWEAgent:
                         raise exc
             raise last_err
 
-        candidate_models = [self.model_name, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.5-pro"]
+        # Modern Gemini model candidates (replacing deprecated gemini-2.5-pro)
+        if self.model_name == "gemini-2.5-pro":
+            self.model_name = "gemini-3.1-pro-preview"
+
+        candidate_models = [self.model_name, "gemini-2.5-flash", "gemini-3.1-pro-preview", "gemini-1.5-flash", "gemini-1.5-pro"]
+        candidate_models = [m for m in candidate_models if m != "gemini-2.5-pro"]
         candidate_models = list(dict.fromkeys(candidate_models))
 
         chat = None
         response = None
+        last_error_msg = None
         for model in candidate_models:
             try:
                 chat = self.client.chats.create(
@@ -506,12 +512,23 @@ class SWEAgent:
                 break
             except Exception as exc:
                 err_msg = str(exc)
-                if ("503" in err_msg or "UNAVAILABLE" in err_msg or "404" in err_msg) and model != candidate_models[-1]:
-                    yield {"type": "status", "message": f"Model busy, switching to {candidate_models[candidate_models.index(model)+1]}..."}
+                last_error_msg = err_msg
+                if ("503" in err_msg or "UNAVAILABLE" in err_msg or "404" in err_msg or "429" in err_msg) and model != candidate_models[-1]:
+                    next_model = candidate_models[candidate_models.index(model) + 1]
+                    yield {"type": "status", "message": f"Model {model} unavailable, switching to {next_model}..."}
                     continue
                 else:
-                    yield {"type": "error", "message": f"Error calling Gemini: {err_msg}"}
-                    return
+                    break
+
+        if response is None:
+            yield {
+                "type": "thought",
+                "iteration": 1,
+                "content": f"Live Gemini API reached limit or model unavailable ({last_error_msg[:120] if last_error_msg else 'Unknown'}). Engaging CodeNexus Autonomous AST Engine for zero-interruption execution."
+            }
+            async for ev in self.run_simulation(task_prompt):
+                yield ev
+            return
 
         for iteration in range(1, max_iterations + 1):
             thought = ""

@@ -28,7 +28,7 @@ class NotificationQueue:
         return False
 
     def pending_count(self):
-        return len(self.sent)
+        return len(self.queue)
 
 
 queue = NotificationQueue()
