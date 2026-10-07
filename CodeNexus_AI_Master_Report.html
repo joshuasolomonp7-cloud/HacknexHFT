@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeNexus AI - Project Master Documentation & Differentiator Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500;600&display=swap');
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      color: #1a202c;
+      background: #ffffff;
+      margin: 0;
+      padding: 40px;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header {
+      border-bottom: 3px solid #6366f1;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .badge {
+      background: #ede9fe;
+      color: #6366f1;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #0f172a;
+      margin: 5px 0 10px 0;
+      font-weight: 800;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      font-size: 18px;
+      color: #1e293b;
+      margin-top: 30px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 700;
+    }
+
+    p, li {
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .highlight-box {
+      background: #f8fafc;
+      border-left: 4px solid #6366f1;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .flowchart {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: 'Fira Code', monospace;
+      padding: 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .tag-pass {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+
+    .print-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+
+    .print-btn:hover {
+      background: #4f46e5;
+    }
+
+    @media print {
+      body { padding: 0; }
+      .print-btn { display: none; }
+      .flowchart { background: #1e293b !important; color: #7dd3fc !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Save / Print as PDF</button>
+
+  <div class="container">
+    <div class="header">
+      <span class="badge">HACKNEX 2026 Internal Qualifier Round</span>
+      <h1>CodeNexus AI: Autonomous Software Engineering & Verification Agent</h1>
+      <div class="meta">
+        <strong>Problem Statement:</strong> HNX26PSI09 | <strong>Domain:</strong> Generative AI & Autonomous SWE | <strong>Team:</strong> HacknexHFT<br>
+        <strong>GitHub Repository:</strong> <a href="https://github.com/joshuasolomonp7-cloud/HacknexHFT">https://github.com/joshuasolomonp7-cloud/HacknexHFT</a>
+      </div>
+    </div>
+
+    <h2>1. Executive Summary & Problem Context</h2>
+    <p>
+      In multi-thousand-line repositories, code modifications frequently fail because standard AI tools rewrite entire files blindly, lack the capability to execute the codebase's test suite, and introduce unintended regressions on untouched features.
+    </p>
+    <div class="highlight-box">
+      <strong>Our Solution:</strong> CodeNexus AI is an autonomous, full-stack software engineering agent that navigates existing codebases, understands symbol hierarchies, applies surgical line-level patches, and self-corrects using automated test execution to guarantee zero regressions.
+    </div>
+
+    <h2>2. The Core Innovation: Closed-Loop Verification Flow</h2>
+    <div class="flowchart">
+ ┌──────────────┐     ┌───────────────┐     ┌──────────────┐     ┌───────────────┐
+ │ 1. EXPLORE   │ ──► │ 2. UNDERSTAND │ ──► │ 3. PATCH     │ ──► │ 4. TEST       │
+ │ AST & Tree   │     │ Context & Bug │     │ Surgical Edit│     │ Run Suite     │
+ └──────────────┘     └───────────────┘     └──────────────┘     └───────┬───────┘
+        ▲                                                                │
+        │                       (If Tests Fail)                          ▼
+ ┌──────┴───────┐     ┌───────────────┐     ┌──────────────┐     ┌───────────────┐
+ │ 8. RETEST    │ ◄── │ 7. REPAIR     │ ◄── │ 6. DIAGNOSE  │ ◄── │ 5. OBSERVE    │
+ │ Ensure Pass  │     │ Refined Diff  │     │ Traceback Log│     │ Stack Trace   │
+ └──────────────┘     └───────────────┘     └──────────────┘     └───────────────┘
+    </div>
+
+    <h2>3. Complete Features Implemented & Working in the Repository</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Tech Stack</th>
+          <th>Capabilities & Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Re-Act Agent Core</strong></td>
+          <td>Python 3.11, FastAPI, WebSockets</td>
+          <td>Multi-turn autonomous tool-calling engine with exponential backoff & failover <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Workspace Tools</strong></td>
+          <td>Python OS & AST</td>
+          <td><code>list_files</code>, <code>view_file</code>, <code>search_code</code>, <code>edit_file_replace</code>, <code>run_tests</code> <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Test Sandbox</strong></td>
+          <td>Subprocess Runner</td>
+          <td>Automated test execution supporting Python (<code>unittest</code>/<code>pytest</code>) & JS (<code>node:test</code>) <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Web Dashboard</strong></td>
+          <td>React 18, Tailwind, Lucide</td>
+          <td>Real-time 3-column workbench with file tree, stream logs, code viewer, and test badges <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Terminal CLI Tool</strong></td>
+          <td>Python CLI (<code>codenexus-cli.py</code>)</td>
+          <td>Zero-config command-line tool auto-detecting any folder or git repository <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dual-Mode Engine</strong></td>
+          <td>Hybrid Inference</td>
+          <td><strong>Live Gemini AI</strong> + <strong>Offline Benchmark Simulation</strong> (fail-safe for demos) <span class="tag-pass">ACTIVE</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. What Makes CodeNexus AI Different & Superior? (Key Differentiators)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Standard AI Chatbots</th>
+          <th>Other Hackathon Teams</th>
+          <th>CodeNexus AI (Our Project)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Patching Approach</strong></td>
+          <td>Dumps full code block</td>
+          <td>Rewrites entire files</td>
+          <td><strong>Surgical line replacement</strong> (touches only 1–3 target lines)</td>
+        </tr>
+        <tr>
+          <td><strong>Verification</strong></td>
+          <td>No code execution</td>
+          <td>Manual user testing</td>
+          <td><strong>Automated closed-loop execution</strong> with test runner</td>
+        </tr>
+        <tr>
+          <td><strong>Regression Prevention</strong></td>
+          <td>High regression risk</td>
+          <td>Untested side-effects</td>
+          <td><strong>Full regression suite verification</strong> before completion</td>
+        </tr>
+        <tr>
+          <td><strong>Interface</strong></td>
+          <td>Web chat only</td>
+          <td>Simple web UI only</td>
+          <td><strong>Dual Interface:</strong> Full Web Workbench + Headless Terminal CLI</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-Language</strong></td>
+          <td>Generic responses</td>
+          <td>Python only</td>
+          <td><strong>Multi-Language:</strong> Python (unittest) + JavaScript (node:test)</td>
+        </tr>
+        <tr>
+          <td><strong>Demo Reliability</strong></td>
+          <td>Fails on rate limits</td>
+          <td>Fails without API key</td>
+          <td><strong>Fail-Safe Dual Mode:</strong> Live AI + Offline Demo fallback</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. Team Workload Distribution (4 Members)</h2>
+    <ul>
+      <li><strong>Dev 1 (Backend Lead & Agent Core):</strong> Re-Act reasoning loop, Gemini SDK integration, multi-model failover, and prompt orchestration.</li>
+      <li><strong>Dev 2 (Backend Infra & Test Sandbox):</strong> AST symbol search tools, file tree navigation, surgical patcher, and subprocess test runner.</li>
+      <li><strong>Dev 3 (Frontend Lead & State Machine):</strong> WebSocket real-time event streaming, application architecture, and live timeline visualizer.</li>
+      <li><strong>Dev 4 (Frontend Visuals & Benchmarks):</strong> Interactive code preview, file tree explorer, test regression matrix, and multi-language benchmark suites.</li>
+    </ul>
+
+    <h2>6. Official Google Form Submission Information</h2>
+    <ul>
+      <li><strong>Problem Statement:</strong> <code>HNX26PSI09: AI Software Engineering Agent</code></li>
+      <li><strong>Project Title:</strong> <code>CodeNexus AI: Autonomous Software Engineering & Verification Agent</code></li>
+      <li><strong>Public GitHub Repo:</strong> <a href="https://github.com/joshuasolomonp7-cloud/HacknexHFT">https://github.com/joshuasolomonp7-cloud/HacknexHFT</a></li>
+      <li><strong>Submission Portal:</strong> <a href="https://forms.gle/KGjkU5u66Va1MDhu5">Google Form Link</a></li>
+    </ul>
+  </div>
+
+</body>
+</html>
