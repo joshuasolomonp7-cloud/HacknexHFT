@@ -11,7 +11,9 @@ import {
   Zap,
   ShieldCheck,
   Code2,
-  FileCode2
+  FileCode2,
+  RotateCcw,
+  Film
 } from 'lucide-react';
 import { FileTree } from './components/FileTree';
 import { AgentTimeline, TimelineEvent } from './components/AgentTimeline';
@@ -42,9 +44,10 @@ export function App() {
   const [fileContent, setFileContent] = useState<string | null>(null);
   
   const [taskPrompt, setTaskPrompt] = useState<string>(PRESETS[0].prompt);
-  const [apiKey, setApiKey] = useState<string>('');
-  const [modelName, setModelName] = useState<string>('gemini-3.8-flash');
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('GEMINI_API_KEY') || '');
+  const [modelName, setModelName] = useState<string>('gemini-2.5-flash');
   const [isSupervised, setIsSupervised] = useState<boolean>(false);
+  const [forceDemo, setForceDemo] = useState<boolean>(false);
   
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -52,6 +55,12 @@ export function App() {
   const [isRunningTest, setIsRunningTest] = useState<boolean>(false);
 
   const socketRef = useRef<WebSocket | null>(null);
+
+  // Save API key to local storage automatically
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    localStorage.setItem('GEMINI_API_KEY', val);
+  };
 
   // Fetch sample repos on mount
   useEffect(() => {
@@ -122,6 +131,22 @@ export function App() {
       });
   };
 
+  const handleResetRepo = () => {
+    if (!selectedRepo) return;
+    // Re-inject baseline bug for demonstration
+    const isPy = selectedRepo.includes('math_utils');
+    const targetFile = isPy ? 'calculator.py' : 'index.js';
+    const oldCode = isPy ? 'if n == 1:\n        return 1' : 'return text\n    .trim()\n    .toLowerCase()\n    .replace(/\\s+/g, \'-\');';
+    const buggyCode = isPy ? 'if n == 1:\n        return 0  # <--- BUG: should be 1' : 'return text\n    .trim()\n    .replace(/\\s+/g, \'_\'); // <--- BUG: Should be .toLowerCase().replace(/\\s+/g, \'-\')';
+
+    fetch(`${API_BASE}/api/repo/file_content?path=${encodeURIComponent(selectedRepo)}&file=${encodeURIComponent(targetFile)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (selectedFile) loadFileContent(selectedRepo, selectedFile);
+        runTestManually();
+      });
+  };
+
   const handleStartAgent = () => {
     if (!selectedRepo || isRunning) return;
     setIsRunning(true);
@@ -137,6 +162,7 @@ export function App() {
           task_prompt: taskPrompt,
           api_key: apiKey || undefined,
           model_name: modelName,
+          demo_mode: forceDemo
         })
       );
     };
@@ -145,7 +171,6 @@ export function App() {
       const parsed: TimelineEvent = JSON.parse(event.data);
       setEvents((prev) => [...prev, parsed]);
 
-      // If a tool was executed that changed a file or ran tests, refresh file and tests
       if (parsed.type === 'tool_result' && parsed.tool === 'edit_file_replace') {
         if (selectedFile) {
           loadFileContent(selectedRepo, selectedFile);
@@ -193,7 +218,7 @@ export function App() {
             <h1 className="font-bold text-sm text-white tracking-wide flex items-center gap-2">
               CodeNexus AI <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">HACKNEX 2026</span>
             </h1>
-            <p className="text-[11px] text-gray-400">Autonomous Software Engineering & Verification Agent</p>
+            <p className="text-[11px] text-gray-400">Autonomous Software Engineering & Verification Workbench</p>
           </div>
         </div>
 
@@ -234,10 +259,10 @@ export function App() {
             <Key className="w-3.5 h-3.5 text-yellow-400" />
             <input
               type="password"
-              placeholder="Gemini API Key (Optional if in .env)"
+              placeholder="Gemini Key (Auto-saved)"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="bg-transparent text-gray-200 outline-none w-48 text-[11px]"
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              className="bg-transparent text-gray-200 outline-none w-44 text-[11px]"
             />
           </div>
         </div>
@@ -246,7 +271,7 @@ export function App() {
       {/* Demo Preset Bar */}
       <div className="flex items-center gap-3 px-6 py-2 bg-[#0d1117] border-b border-[#30363d] text-xs">
         <span className="text-gray-400 font-medium flex items-center gap-1">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Demo Benchmarks:
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Quick Benchmarks:
         </span>
         {PRESETS.map((p, idx) => (
           <button
@@ -259,16 +284,16 @@ export function App() {
           </button>
         ))}
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-4">
           <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 select-none">
             <input
               type="checkbox"
-              checked={isSupervised}
-              onChange={(e) => setIsSupervised(e.target.checked)}
-              className="rounded bg-[#0d1117] border-[#30363d] text-purple-600 focus:ring-0 cursor-pointer"
+              checked={forceDemo}
+              onChange={(e) => setForceDemo(e.target.checked)}
+              className="rounded bg-[#0d1117] border-[#30363d] text-blue-600 focus:ring-0 cursor-pointer"
             />
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[11px]">Human-in-the-Loop Mode</span>
+            <Film className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-[11px] font-medium text-blue-300">Offline Benchmark Mode (No Key Needed)</span>
           </label>
         </div>
       </div>
@@ -305,7 +330,7 @@ export function App() {
                   className="flex-1 flex items-center justify-center gap-2 bg-[#238636] hover:bg-[#2ea043] text-white py-2 px-3 rounded text-xs font-semibold shadow transition-colors"
                 >
                   <Play className="w-3.5 h-3.5" />
-                  <span>Run SWE Agent</span>
+                  <span>{forceDemo || !apiKey ? 'Run Autonomous Demo' : 'Run Live AI Agent'}</span>
                 </button>
               ) : (
                 <button

@@ -83,8 +83,9 @@ async def agent_websocket_endpoint(websocket: WebSocket):
             return
 
         agent = SWEAgent(repo_path=repo_path, model_name=model_name, api_key=api_key)
+        demo_mode = params.get("demo_mode", False) or not bool(api_key)
         
-        async for event in agent.run(task_prompt=task_prompt):
+        async for event in agent.run(task_prompt=task_prompt, force_demo=demo_mode):
             await websocket.send_json(event)
             await asyncio.sleep(0.05)
             
