@@ -79,7 +79,13 @@ def get_blast_radius(path: str = Query(...), symbol: str = Query(...)):
 def reset_benchmark_repo(path: str = Query(...)):
     """Restores baseline bug in target benchmark repo so it can be re-tested live."""
     repo_name = os.path.basename(path)
-    if "ecommerce" in repo_name:
+    if "stress" in repo_name:
+        baseline_dir = os.path.join(os.path.dirname(__file__), "sample_repos", ".baseline_bug_stress_1000")
+        if os.path.exists(baseline_dir):
+            import shutil
+            for item in os.listdir(baseline_dir):
+                shutil.copy2(os.path.join(baseline_dir, item), os.path.join(path, item))
+    elif "ecommerce" in repo_name:
         ctrl_path = os.path.join(path, "order_controller.py")
         if os.path.exists(ctrl_path):
             with open(ctrl_path, "r", encoding="utf-8") as f:

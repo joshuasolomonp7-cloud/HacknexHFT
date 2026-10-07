@@ -41,6 +41,11 @@ const PRESETS = [
     label: 'JavaScript StringUtils (Slugify Bug)',
     repoName: 'js_string_utils',
     prompt: 'The slugify function in index.js currently replaces spaces with underscores and misses lowercasing. Update slugify to lowercase the input and replace spaces with hyphens (-) so that all tests in test/index.test.js pass with zero regressions.'
+  },
+  {
+    label: '🔥 HACKNEX Bug Stress 1000',
+    repoName: 'bug_stress_1000',
+    prompt: 'In bug_stress_1000, users.py::register fails with "Invalid user details" because valid_email() in utils.py has an escaped regex dot bug, and deposit/withdraw have inverted balance operations. Localize and fix the defects in utils.py and users.py to pass registration and balance test suites.'
   }
 ];
 
