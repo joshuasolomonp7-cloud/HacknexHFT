@@ -61,9 +61,51 @@ def get_file_content(path: str = Query(...), file: str = Query(...)):
     return res
 
 @app.post("/api/repo/run_test")
-def execute_test(path: str = Query(...), cmd: str = Query("pytest")):
+def execute_test(path: str = Query(...), cmd: Optional[str] = None):
     res = workspace_tools.run_tests(path, cmd)
     return res
+
+@app.get("/api/repo/ast_symbols")
+def get_ast_symbols(path: str = Query(...)):
+    from tools import ast_engine
+    return ast_engine.build_repo_symbol_index(path)
+
+@app.get("/api/repo/blast_radius")
+def get_blast_radius(path: str = Query(...), symbol: str = Query(...)):
+    from tools import ast_engine
+    return ast_engine.analyze_blast_radius(path, symbol)
+
+@app.post("/api/repo/reset")
+def reset_benchmark_repo(path: str = Query(...)):
+    """Restores baseline bug in target benchmark repo so it can be re-tested live."""
+    repo_name = os.path.basename(path)
+    if "ecommerce" in repo_name:
+        ctrl_path = os.path.join(path, "order_controller.py")
+        if os.path.exists(ctrl_path):
+            with open(ctrl_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            # Restore bug (passing customer_id instead of customer_tier)
+            buggy = content.replace("order.customer_tier", "order.customer_id")
+            with open(ctrl_path, "w", encoding="utf-8") as f:
+                f.write(buggy)
+    elif "js" in repo_name:
+        idx_path = os.path.join(path, "index.js")
+        if os.path.exists(idx_path):
+            with open(idx_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            buggy = content.replace("text.trim().toLowerCase().replace(/\\s+/g, '-')", "text.trim().replace(/\\s+/g, '_')")
+            with open(idx_path, "w", encoding="utf-8") as f:
+                f.write(buggy)
+    else:
+        calc_path = os.path.join(path, "calculator.py")
+        if os.path.exists(calc_path):
+            with open(calc_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            buggy = content.replace("if n == 1:\n        return 1", "if n == 1:\n        return 0  # <--- BUG: should be 1")
+            with open(calc_path, "w", encoding="utf-8") as f:
+                f.write(buggy)
+
+    return {"status": "success", "message": f"Reset {repo_name} to baseline failing state"}
 
 @app.websocket("/ws/agent")
 async def agent_websocket_endpoint(websocket: WebSocket):

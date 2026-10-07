@@ -31,16 +31,17 @@ Unlike standard AI coding assistants that blindly generate code without validati
 
 ### The Problem:
 In multi-thousand-line repositories, code modifications frequently fail because AI models:
-1. Attempt full-file rewrites, causing hallucinations and regressions on untouched features.
+1. Attempt full-file rewrites, causing hallucinations and breaking untouched features.
 2. Cannot run the repository's test suite to verify whether the patch works.
-3. Lack the capability to self-correct from compiler or test execution failures.
+3. Lack genuine structural AST understanding and blast radius analysis.
 
-### Our Solution:
-* **AST Symbol Navigation**: Ingests repository structure and maps symbol hierarchies (`list_files`, `view_file`, `search_code`) to ground edits in actual project dependencies without context overflow.
+### Our Solution & Upgrades:
+* **Real AST Code Intelligence (`ast_engine.py`)**: Uses Python's native `ast` module to index classes, functions, caller graphs, and cross-file references (`find_symbol`, `find_callers`).
+* **Blast Radius Impact Analysis**: Computes direct callers, affected files, and risk level (**LOW / MEDIUM / HIGH**) before touching code.
 * **Surgical Line-Level Patch Engine**: Replaces only the exact targeted lines (`edit_file_replace`) to preserve unaffected code.
+* **Git Transactional Snapshot & Rollback (`git_sandbox.py`)**: Takes pre-patch snapshots and automatically rolls back if regressions are detected.
 * **Controlled Subprocess Execution Environment**: Automatically executes test suites (`unittest`, `pytest`, `node:test`) and captures standard outputs, error streams, and exit codes.
-* **Self-Healing Verification Loop**: If test assertions fail, the execution traceback is fed back into the reasoning loop, allowing the agent to diagnose and repair the issue iteratively until benchmark tests pass with zero regressions.
-* **Real-time Developer Dashboard**: A full-stack web interface streaming reasoning summaries, tool invocations, code diffs, and test badges over WebSockets.
+* **Dual Interface**: Full interactive Web Dashboard (`http://localhost:5173`) + Headless Terminal CLI (`python codenexus-cli.py`).
 
 ---
 
@@ -51,8 +52,8 @@ In multi-thousand-line repositories, code modifications frequently fail because 
 | **Problem Statement** | `HNX26PSI09: AI Software Engineering Agent` |
 | **Project Title** | `CodeNexus AI: Autonomous Software Engineering & Verification Agent` |
 | **Public Git Repository** | `https://github.com/joshuasolomonp7-cloud/HacknexHFT` |
-| **Core Idea & Innovation** | Closed-loop autonomous SWE agent with AST symbol navigation, surgical line patching, and test-driven self-correction. |
-| **Technologies & Models** | Google Gemini 2.5 Flash / 1.5 Pro, Python 3.11, FastAPI, WebSockets, React 18, Vite, TypeScript, Tailwind CSS. |
+| **Core Idea & Innovation** | Closed-loop autonomous SWE agent with AST symbol navigation, blast radius analysis, surgical line patching, transactional rollback, and test-driven self-correction. |
+| **Technologies & Models** | Google Gemini 2.5 Flash / 1.5 Pro, Python AST Engine, FastAPI, WebSockets, React 18, Vite, TypeScript, Tailwind CSS. |
 
 ---
 
@@ -66,9 +67,11 @@ In multi-thousand-line repositories, code modifications frequently fail because 
 │        (React 18 + Tailwind CSS)        │            (FastAPI + Python 3.11)            │
 ├─────────────────────────────────────────┼───────────────────────────────────────────────┤
 │ • Repository File Tree Explorer         │ • Re-Act Autonomous Reasoning Controller      │
-│ • Live Action & Tool Stream             │ • AST & Symbol Grep Navigation Tools          │
+│ • Live Action & Tool Stream             │ • AST Symbol Graph & Caller Indexing          │
+│ • AST Symbol & Blast Radius Inspector   │ • Blast Radius Risk Calculator                │
 │ • Code Preview & Diff Inspection        │ • Surgical Search-Replace File Patcher        │
 │ • Test Suite Regression Dashboard       │ • Controlled Subprocess Test Runner           │
+│ • 1-Click Bug Reset Controls            │ • Git Transactional Snapshot & Rollback       │
 └─────────────────────────────────────────┴───────────────────────────────────────────────┘
                     ▲                                             │
                     │                    WebSocket Stream         │
@@ -84,11 +87,11 @@ In multi-thousand-line repositories, code modifications frequently fail because 
 
 ## 🛠️ 5. Technology Stack & Verified Versions
 
-- **LLM Engine**: Google Gemini 2.5 Flash / Gemini 1.5 Flash / Gemini 1.5 Pro via the official `google-genai` SDK
+- **LLM Engine**: Google Gemini 2.5 Flash / Gemini 1.5 Flash / Gemini 1.5 Pro via official `google-genai` SDK
+- **Code Intelligence**: Python Native `ast` Parser & Dependency Graph Builder
 - **Backend API**: Python 3.11+ (tested on Python 3.11 and 3.13), FastAPI 0.110+, Uvicorn, WebSockets, python-dotenv
 - **Testing Sandbox**: Subprocess execution supporting Python (`unittest`, `pytest`) and JavaScript (`node:test`, `Jest`)
-- **Frontend Dashboard**: React 18, Vite 5, TypeScript 5, Tailwind CSS 3.4, Lucide Icons (tested on Node.js 18.x and 20.x)
-- **CORS & Networking**: Backend CORS is pre-configured for full cross-origin compatibility. Frontend requires no separate `.env` file.
+- **Frontend Dashboard**: React 18, Vite 5, TypeScript 5, Tailwind CSS 3.4, Lucide Icons
 
 ---
 
@@ -114,7 +117,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the `backend/` folder:
+Create a `.env` file in `backend/`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
@@ -132,41 +135,38 @@ npm install
 ### Option A: 1-Click Launch (Windows)
 Double-click **`start_all.bat`** in the project root to start both backend and frontend servers simultaneously.
 
-### Option B: Manual Terminal Commands
-1. **Start Backend Server**:
-   ```bash
-   cd backend
-   python main.py
-   # Runs on http://localhost:8000
-   ```
-2. **Start Frontend Dashboard**:
-   ```bash
-   cd frontend
-   npm run dev
-   # Runs on http://localhost:5173 (or 5174)
-   ```
+### Option B: Terminal CLI (Zero UI Needed)
+Run directly against any folder on your computer:
+```bash
+python codenexus-cli.py --demo "Fix failing tests in this repository"
+```
+
+### Option C: Manual Web Launch
+1. **Start Backend**: `cd backend && python main.py` (Runs on `http://localhost:8000`)
+2. **Start Frontend**: `cd frontend && npm run dev` (Runs on `http://localhost:5173`)
 
 ---
 
 ## 🧪 8. How to Reproduce Demonstrated Results
 
-### Scenario 1: Python Mathematical Sequence Bug Fix
-1. Open the dashboard at `http://localhost:5173` (or `http://localhost:5174`).
-2. Select benchmark preset: **`Python MathUtils (Fibonacci Bug)`**.
-3. Click **"Run Tests"** on the right panel to observe the initial test failure:
-   ```
-   FAIL: test_fibonacci_base_cases (AssertionError: 0 != 1)
-   ```
-4. Click **"Run SWE Agent"**:
-   - CodeNexus inspects `calculator.py` and `tests/test_calculator.py`.
-   - Localizes the base condition error (`if n == 1: return 0`).
-   - Applies the surgical fix (`if n == 1: return 1`).
-   - Re-runs the test suite and verifies **`ALL TESTS PASSED`** with zero regressions.
+### Scenario 1: Multi-File Cross-Module Bug (E-Commerce Order & Pricing API)
+1. Open dashboard at `http://localhost:5173`.
+2. Select benchmark preset: **`E-Commerce Multi-File (Order & Pricing API)`**.
+3. Click **"Run Tests"** $\rightarrow$ Observe failure: `AssertionError: 0.0 != 40.0` (VIP customer discount fails).
+4. Click **"AST Code Intelligence"** $\rightarrow$ Inspect symbol table and callers of `calculate_discount`.
+5. Click **"Run SWE Agent"**:
+   - CodeNexus identifies that `order_controller.py` calls `calculate_discount` with `customer_id` instead of `customer_tier`.
+   - Modifies `order_controller.py` and verifies against `pricing_service.py`.
+   - Tests turn **`ALL TESTS PASSED`** with zero regressions on existing standard customer orders!
 
-### Scenario 2: JavaScript String Formatting Bug Fix
-1. Select benchmark preset: **`JavaScript StringUtils (Slugify Bug)`**.
-2. Click **"Run Tests"** $\rightarrow$ Observe assertion failure: `AssertionError: 'Hello_World' !== 'hello-world'`.
-3. Click **"Run SWE Agent"** $\rightarrow$ CodeNexus updates `slugify` to lowercase and use hyphens, validating that all Node test suites pass.
+### Scenario 2: Python Sequence Logic Bug (MathUtils)
+1. Select preset: **`Python MathUtils (Fibonacci Bug)`**.
+2. Click **"Run Tests"** $\rightarrow$ `FAIL: test_fibonacci_base_cases (0 != 1)`.
+3. Click **"Run SWE Agent"** $\rightarrow$ Localizes line 23 in `calculator.py` and fixes base condition.
+
+### Scenario 3: JavaScript String Formatting Bug
+1. Select preset: **`JavaScript StringUtils (Slugify Bug)`**.
+2. Click **"Run SWE Agent"** $\rightarrow$ Patches `index.js` to lowercase and hyphenate.
 
 ---
 
@@ -174,12 +174,14 @@ Double-click **`start_all.bat`** in the project root to start both backend and f
 
 | Feature | Status | Description |
 | :--- | :---: | :--- |
-| **Autonomous Re-Act Loop** | ✅ Implemented | Multi-turn reasoning, tool execution, and observation cycle |
-| **Multi-Language Test Execution** | ✅ Implemented | Controlled subprocess execution supporting Python and JavaScript test suites |
-| **Self-Healing Verification** | ✅ Implemented | Traceback reflection and iterative repair upon test failures |
-| **Interactive Developer UI** | ✅ Implemented | Real-time WebSocket streaming, file tree explorer, and test regression status |
-| **Multi-Model Failover** | ✅ Implemented | Resilient exponential backoff with multi-model fallback |
-| **Human-in-the-Loop Mode** | 🌟 Stretch Goal | Supervised approval flow for sensitive production modifications |
+| **Real AST Code Intelligence** | ✅ Implemented | Class/function indexing and cross-file caller graph via Python `ast` |
+| **Blast Radius Impact Engine** | ✅ Implemented | Direct callers, affected files, and risk calculation |
+| **Git Transactional Rollback** | ✅ Implemented | Pre-patch snapshots and automatic rollback upon regression failures |
+| **Multi-File Benchmark Suite** | ✅ Implemented | Cross-module coordination across models, services, and controllers |
+| **Multi-Language Testing** | ✅ Implemented | Subprocess execution supporting Python and JavaScript test suites |
+| **Interactive Developer UI** | ✅ Implemented | Real-time WebSocket streaming, AST visualizer, and test regression matrix |
+| **Terminal CLI Tool** | ✅ Implemented | Headless command-line tool auto-attaching to any directory |
+| **Fail-Safe Dual Mode** | ✅ Implemented | Live Gemini AI + Offline Autonomous Benchmark simulation |
 | **Containerized Sandboxing** | 🌟 Stretch Goal | Ephemeral Docker container isolation for untrusted repositories |
 
 ---
@@ -189,6 +191,6 @@ Double-click **`start_all.bat`** in the project root to start both backend and f
 | Member | Focus Area | Key Contributions |
 | :--- | :--- | :--- |
 | **Team Member 1** | Backend Lead & Agent Core | Re-Act reasoning loop, Gemini SDK integration, multi-model failover |
-| **Team Member 2** | Backend Infra & Testing | Workspace tools, AST search, Subprocess test execution environment |
+| **Team Member 2** | Backend Infra & AST Engine | Real AST symbol parser, blast radius calculator, transactional git sandbox |
 | **Team Member 3** | Frontend Lead & State | WebSocket event streaming, App UI architecture, timeline visualizer |
-| **Team Member 4** | Frontend Visuals & Benchmarks | Code viewer, file tree explorer, benchmark test suites |
+| **Team Member 4** | Frontend Visuals & Benchmarks | AST symbol explorer, code viewer, multi-file e-commerce benchmark suite |
