@@ -137,11 +137,11 @@ def analyze_blast_radius(repo_path: str, symbol_name: str) -> Dict[str, Any]:
     
     caller_count = len(callers)
     if caller_count > 6 or len(prod_files_affected) > 3:
-        risk = "HIGH 🔴"
+        risk = "HIGH [CRITICAL]"
     elif caller_count > 1 or len(prod_files_affected) > 1:
-        risk = "MEDIUM 🟡"
+        risk = "MEDIUM [MODERATE]"
     else:
-        risk = "LOW 🟢"
+        risk = "LOW [SAFE]"
         
     return {
         "target_symbol": symbol_name,
