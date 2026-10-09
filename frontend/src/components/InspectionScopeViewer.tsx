@@ -43,7 +43,7 @@ export interface BlastRadiusData {
 
 interface InspectionScopeViewerProps {
   telemetry: InspectionTelemetry | null;
-  blastRadius: BlastRadiusData | null;
+  blastRadius?: BlastRadiusData | null;
 }
 
 export const InspectionScopeViewer: React.FC<InspectionScopeViewerProps> = ({ telemetry, blastRadius }) => {
