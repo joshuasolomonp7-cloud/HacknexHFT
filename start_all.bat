@@ -1,13 +1,15 @@
 @echo off
-title AutoSWE Agent Launcher
+title CodeNexus SWEAgent Launcher
 echo ====================================================
-echo Launching AutoSWE Agent (Backend + Frontend)
+echo Launching CodeNexus SWEAgent (Backend + Frontend)
 echo ====================================================
 
-start "AutoSWE Backend" cmd /k start_backend.bat
+start "CodeNexus Backend" cmd /k start_backend.bat
 timeout /t 2 >nul
-start "AutoSWE Frontend" cmd /k start_frontend.bat
+start "CodeNexus Frontend" cmd /k start_frontend.bat
 
-echo Both servers launched!
-echo Backend: http://localhost:8000
-echo Frontend: http://localhost:5173
+echo.
+echo Both servers launched on dedicated non-conflicting ports!
+echo Backend API : http://localhost:8090
+echo Frontend UI : http://localhost:5188
+echo.

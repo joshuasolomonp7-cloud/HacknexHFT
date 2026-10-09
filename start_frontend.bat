@@ -1,7 +1,8 @@
 @echo off
-title AutoSWE Agent - Frontend UI
+title CodeNexus SWEAgent - Frontend UI
 echo ====================================================
-echo Starting AutoSWE Agent Frontend Dashboard (Vite + React)
+echo Starting CodeNexus Frontend Dashboard (Vite + React)
+echo Dedicated Port: http://localhost:5188
 echo ====================================================
 
 set "PATH=C:\Program Files\nodejs;%PATH%"
@@ -13,6 +14,6 @@ if not exist node_modules (
 )
 
 echo.
-echo Starting Vite Dev Server on http://localhost:5173 ...
+echo Starting Vite Dev Server on http://localhost:5188 ...
 call npm run dev
 pause
