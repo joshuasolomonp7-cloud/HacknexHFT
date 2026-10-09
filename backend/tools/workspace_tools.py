@@ -117,6 +117,8 @@ def run_tests(repo_path: str, test_cmd: Optional[str] = None) -> Dict[str, Any]:
         # Auto-detect test runner
         if os.path.exists(os.path.join(repo_path, "package.json")):
             test_cmd = "node --test"
+        elif os.path.exists(os.path.join(repo_path, "test_stress.py")):
+            test_cmd = "python -m unittest -v test_stress.py"
         else:
             test_cmd = "python -m unittest discover tests"
 

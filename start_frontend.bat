@@ -4,6 +4,7 @@ echo ====================================================
 echo Starting AutoSWE Agent Frontend Dashboard (Vite + React)
 echo ====================================================
 
+set "PATH=C:\Program Files\nodejs;%PATH%"
 cd frontend
 
 if not exist node_modules (
