@@ -504,11 +504,12 @@ export function App() {
             <select
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
-              className="bg-transparent text-gray-200 outline-none cursor-pointer"
+              className="bg-transparent text-gray-200 outline-none cursor-pointer text-[11px]"
             >
+              <option value="gemini-3.1-pro-preview" className="bg-[#161b22]">Gemini 3.1 Pro (Preview)</option>
               <option value="gemini-2.5-flash" className="bg-[#161b22]">Gemini 2.5 Flash</option>
-              <option value="gemini-2.5-pro" className="bg-[#161b22]">Gemini 2.5 Pro</option>
               <option value="gemini-1.5-flash" className="bg-[#161b22]">Gemini 1.5 Flash</option>
+              <option value="gemini-1.5-pro" className="bg-[#161b22]">Gemini 1.5 Pro</option>
             </select>
           </div>
 
