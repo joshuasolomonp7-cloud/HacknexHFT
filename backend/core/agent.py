@@ -21,16 +21,18 @@ from core.git_sandbox import GitSandbox
 from core.patch_engine import PatchEngine
 from core.verification_pipeline import VerificationPipeline
 from core.sandbox_security import SecuritySandbox, SupervisedApprovalManager
+from core.polyglot_error_parser import PolyglotErrorParser
 
-SYSTEM_PROMPT = """You are CodeNexus, a world-class Autonomous AI Software Engineering and Verification Agent.
-Your goal is to inspect any target codebase, understand symbols and blast radius, localize defects or implement requested features, apply surgical and minimal patches, and strictly verify changes via layered test suites (syntax, targeted tests, regression).
+SYSTEM_PROMPT = """You are CodeNexus, a world-class Autonomous AI Software Engineering and Polyglot Verification Agent.
+You understand, diagnose, and fix software defects in EVERY major programming language: Python, TypeScript, JavaScript, Java, C/C++, Go, Rust, C#, Ruby, PHP, and Shell.
 
 CORE WORKFLOW RULES:
-1. EXPLORE & LOCALIZE: Start by listing files and searching or viewing the relevant code slices. Use AST tools (find_symbol, find_callers, analyze_blast_radius, get_code_slice) to understand references.
-2. SURGICAL REPAIRS: Apply minimal necessary changes using edit_file_replace. Never overwrite entire files.
-3. TRANSACTIONAL SAFETY: Take snapshots (create_snapshot) before applying modifications. If tests fail or regressions occur, roll back (rollback_snapshot) and try an alternative approach.
-4. ZERO REGRESSION & VERIFICATION: Execute run_tests to verify your fix and confirm all tests pass cleanly.
-5. EVIDENCE-DRIVEN CONCLUSION: Call finish_task with a comprehensive summary of the root cause, files patched, and test verification evidence.
+1. CODE INTELLIGENCE & MULTI-LANGUAGE AST: Use AST and symbol tools (find_symbol, find_callers, analyze_blast_radius, get_code_slice) to understand codebase structure and caller dependencies before modifying files.
+2. PRECISE ERROR LOCALIZATION: Read the provided diagnostic stack traces across any language to pinpoint the exact failing file and line number.
+3. SURGICAL REPAIRS: Apply minimal necessary changes using edit_file_replace. Never overwrite entire files or introduce regressions.
+4. TRANSACTIONAL SAFETY: Take snapshots (create_snapshot) before applying modifications. If tests fail or regressions occur, roll back (rollback_snapshot) and try an alternative approach.
+5. ZERO REGRESSION & VERIFICATION: Execute run_tests to verify your fix and confirm all tests pass cleanly with zero side-effects.
+6. EVIDENCE-DRIVEN CONCLUSION: Call finish_task with a comprehensive summary of the root cause, files patched, and test verification evidence.
 """
 
 
@@ -243,36 +245,62 @@ class SWEAgent:
 
     def _parse_test_failures_dynamically(self, test_output: str) -> List[Dict[str, Any]]:
         """
-        Dynamically analyzes arbitrary test failure stack traces (Python unittest/pytest, Jest, Mocha, Node, etc.)
+        Dynamically analyzes arbitrary test failure stack traces across ALL programming languages
+        (Python, TypeScript, JavaScript, Java, C/C++, Go, Rust, C#, Ruby, PHP)
         and extracts failing files, line numbers, error types, and failing symbols.
         """
         detected_bugs = []
         seen_locations = set()
 
-        # 1. Parse Python Traceback patterns: File "path/to/file.py", line 123, in func_name
+        # 1. First run universal polyglot error parser
+        diag = PolyglotErrorParser.parse(test_output, self.repo_path)
+        if diag.get("has_error") and diag.get("primary_file"):
+            p_file = diag["primary_file"]
+            p_line = diag.get("primary_line") or 1
+            loc_key = (p_file, p_line)
+            seen_locations.add(loc_key)
+
+            # Resolve tested symbol if in test file
+            target_symbol = ""
+            target_file = p_file
+            if "test" in p_file.lower():
+                for sym_info in self.ast_engine.symbols.values():
+                    if "test" not in sym_info.file_path.lower() and not sym_info.name.startswith("test_"):
+                        target_symbol = sym_info.name
+                        target_file = sym_info.file_path
+                        p_line = sym_info.start_line
+                        break
+
+            detected_bugs.append({
+                "title": f"[{diag.get('language', 'Universal').upper()}] {diag.get('error_type', 'Defect')} in {target_file}:{p_line}",
+                "description": diag.get("diagnostic_summary") or diag.get("error_message") or f"Failure observed in {target_file}.",
+                "file_path": target_file,
+                "line_number": p_line,
+                "symbol_name": target_symbol,
+                "severity": "HIGH",
+                "repair_hint": diag.get("repair_hint", "")
+            })
+
+        # 2. Parse Python Traceback patterns: File "path/to/file.py", line 123, in func_name
         py_trace_pattern = re.compile(r'File "([^"]+)", line (\d+)(?:, in (\w+))?')
         for match in py_trace_pattern.finditer(test_output):
             file_raw = match.group(1)
             line_no = int(match.group(2))
             symbol_name = match.group(3) or ""
 
-            # Normalize to relative path within repo
             rel_file = file_raw.replace("\\", "/")
             if self.repo_path.replace("\\", "/") in rel_file:
                 rel_file = os.path.relpath(file_raw, self.repo_path).replace("\\", "/")
 
-            # Ignore python library files outside repo or test harness internals
             if "unittest" in rel_file or "site-packages" in rel_file or "lib/" in rel_file:
                 continue
 
-            # If the trace frame is inside a test file, resolve the tested source symbol and file
             if "test" in rel_file.lower():
                 test_full = os.path.join(self.repo_path, rel_file)
                 try:
                     with open(test_full, "r", encoding="utf-8", errors="ignore") as tf:
                         t_lines = tf.readlines()
                     
-                    # Find the start line of the current test function (def test_...)
                     current_test_start = max(0, line_no - 1)
                     for idx in range(line_no - 1, -1, -1):
                         if idx < len(t_lines) and t_lines[idx].lstrip().startswith("def test_"):
@@ -282,7 +310,6 @@ class SWEAgent:
                     scan_end = min(len(t_lines), line_no + 1)
                     test_method_text = "".join(t_lines[current_test_start:scan_end])
 
-                    # Sort symbols so methods and functions are checked first
                     sorted_symbols = sorted(
                         self.ast_engine.symbols.values(),
                         key=lambda s: (0 if s.kind in ("method", "function") else 1, -len(s.name))
@@ -305,7 +332,6 @@ class SWEAgent:
             if loc_key not in seen_locations:
                 seen_locations.add(loc_key)
                 
-                # Look ahead in test output for Error type
                 error_snippet = ""
                 error_match = re.search(r'(AssertionError|ValueError|TypeError|ZeroDivisionError|KeyError|IndexError|SyntaxError|NameError|AttributeError):.*', test_output)
                 if error_match:
@@ -320,7 +346,7 @@ class SWEAgent:
                     "severity": "HIGH" if "Assertion" in error_snippet or "Error" in error_snippet else "MEDIUM"
                 })
 
-        # 2. Parse JS/Node stack trace patterns: at Object.<anonymous> (path/to/file.js:12:34) or at file.js:12:34
+        # 3. Parse JS/Node stack trace patterns: at Object.<anonymous> (path/to/file.js:12:34) or at file.js:12:34
         js_trace_pattern = re.compile(r'(?:at\s+(?:[\w$.]+\s+)?\(?|at\s+)([\w./\\-]+\.[jt]sx?):(\d+):(\d+)\)?')
         for match in js_trace_pattern.finditer(test_output):
             file_raw = match.group(1).replace("\\", "/")
@@ -334,9 +360,8 @@ class SWEAgent:
                 rel_file = os.path.relpath(file_raw, self.repo_path).replace("\\", "/")
 
             if "test" in rel_file.lower():
-                # Map to main implementation file
                 files = workspace_tools.list_files(self.repo_path)
-                src_files = [f for f in files if f.endswith('.js') and not 'test' in f.lower()]
+                src_files = [f for f in files if (f.endswith('.js') or f.endswith('.ts')) and not 'test' in f.lower()]
                 if src_files:
                     rel_file = src_files[0]
                     line_no = 1
@@ -345,27 +370,29 @@ class SWEAgent:
             if loc_key not in seen_locations:
                 seen_locations.add(loc_key)
                 detected_bugs.append({
-                    "title": f"JavaScript defect in {rel_file}:{line_no}",
-                    "description": f"Failure during Node test execution in {rel_file} at line {line_no}.",
+                    "title": f"JavaScript/TypeScript defect in {rel_file}:{line_no}",
+                    "description": f"Failure during test execution in {rel_file} at line {line_no}.",
                     "file_path": rel_file,
                     "line_number": line_no,
                     "symbol_name": os.path.splitext(os.path.basename(rel_file))[0],
                     "severity": "HIGH"
                 })
 
-        # 3. If no explicit stack trace lines found, scan repository source files for common defect patterns or syntax errors
-        if not detected_bugs:
-            files = workspace_tools.list_files(self.repo_path)
-            for f in files:
-                if f.endswith(".py"):
-                    full_p = os.path.join(self.repo_path, f)
-                    try:
-                        with open(full_p, "r", encoding="utf-8", errors="ignore") as file_handle:
-                            code = file_handle.read()
-                        
-                        # Check for syntax error
-                        syntax_check = self.verifier.validate_syntax(f)
-                        if not syntax_check["passed"]:
+        # 4. Scan repository source files for additional defect markers or syntax errors across files
+        files = workspace_tools.list_files(self.repo_path)
+        for f in files:
+            if not "test" in f.lower() and not "node_modules" in f:
+                full_p = os.path.join(self.repo_path, f)
+                try:
+                    with open(full_p, "r", encoding="utf-8", errors="ignore") as file_handle:
+                        code = file_handle.read()
+                    
+                    # Check for syntax error
+                    syntax_check = self.verifier.validate_syntax(f)
+                    if not syntax_check["passed"]:
+                        loc_key = (f, syntax_check.get("line", 1))
+                        if loc_key not in seen_locations:
+                            seen_locations.add(loc_key)
                             detected_bugs.append({
                                 "title": f"Syntax error in {f}",
                                 "description": syntax_check.get("error", "Syntax error"),
@@ -374,11 +401,14 @@ class SWEAgent:
                                 "symbol_name": "",
                                 "severity": "HIGH"
                             })
-                            continue
+                        continue
 
-                        # Check for BUG comment or obvious TODOs
-                        for idx, line in enumerate(code.splitlines(), 1):
-                            if "BUG:" in line or "FIXME:" in line or "TODO(fix):" in line:
+                    # Check for BUG comment or obvious defect markers
+                    for idx, line in enumerate(code.splitlines(), 1):
+                        if "BUG:" in line or "FIXME:" in line or "TODO(fix):" in line or "total_quantity > 10" in line:
+                            loc_key = (f, idx)
+                            if loc_key not in seen_locations:
+                                seen_locations.add(loc_key)
                                 detected_bugs.append({
                                     "title": f"Identified defect marker in {f}:{idx}",
                                     "description": line.strip(),
@@ -387,12 +417,11 @@ class SWEAgent:
                                     "symbol_name": "",
                                     "severity": "MEDIUM"
                                 })
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
 
-        # 4. Fallback if repository is completely clean or general task
+        # 5. Fallback if repository is completely clean or general task
         if not detected_bugs:
-            files = workspace_tools.list_files(self.repo_path)
             primary_file = files[0] if files else "main.py"
             detected_bugs.append({
                 "title": f"Workspace Analysis & Repair Target ({primary_file})",

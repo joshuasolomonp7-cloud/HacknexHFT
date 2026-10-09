@@ -1,11 +1,13 @@
 """
-CodeNexus AST Symbol & Dependency Graph Engine
-Provides deep Python AST parsing, symbol extraction, caller/callee analysis,
-reference tracking, and blast radius calculation.
+CodeNexus Universal Multi-Language AST Symbol & Dependency Graph Engine
+Provides deep AST & polyglot grammar parsing for Python, TypeScript/JavaScript,
+Java, C/C++, Go, Rust, C#, Ruby, PHP, and Shell.
+Extracts symbols, caller/callee references, cross-file dependencies, and calculates blast radius.
 """
 
 import ast
 import os
+import re
 from typing import Dict, List, Any, Optional, Set, Tuple
 
 
@@ -13,14 +15,15 @@ class SymbolInfo:
     def __init__(
         self,
         name: str,
-        kind: str,  # 'function', 'class', 'method', 'variable'
+        kind: str,  # 'function', 'class', 'method', 'interface', 'struct', 'variable'
         file_path: str,
         start_line: int,
         end_line: int,
         docstring: Optional[str] = None,
         parameters: Optional[List[str]] = None,
         parent: Optional[str] = None,
-        code_slice: str = ""
+        code_slice: str = "",
+        language: str = "python"
     ):
         self.name = name
         self.kind = kind
@@ -31,6 +34,7 @@ class SymbolInfo:
         self.parameters = parameters or []
         self.parent = parent
         self.code_slice = code_slice
+        self.language = language
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -42,11 +46,32 @@ class SymbolInfo:
             "docstring": self.docstring,
             "parameters": self.parameters,
             "parent": self.parent,
-            "code_slice": self.code_slice
+            "code_slice": self.code_slice,
+            "language": self.language
         }
 
 
 class ASTEngine:
+    SUPPORTED_EXTENSIONS = {
+        ".py": "python",
+        ".js": "javascript",
+        ".jsx": "javascript",
+        ".ts": "typescript",
+        ".tsx": "typescript",
+        ".java": "java",
+        ".c": "c",
+        ".cpp": "cpp",
+        ".cc": "cpp",
+        ".cxx": "cpp",
+        ".h": "c_header",
+        ".hpp": "cpp_header",
+        ".go": "go",
+        ".rs": "rust",
+        ".cs": "csharp",
+        ".rb": "ruby",
+        ".php": "php"
+    }
+
     def __init__(self, repo_path: str):
         self.repo_path = os.path.abspath(repo_path)
         self.symbols: Dict[str, SymbolInfo] = {}  # full_key -> SymbolInfo
@@ -58,7 +83,7 @@ class ASTEngine:
         self.indexed = False
 
     def index_repository(self) -> Dict[str, Any]:
-        """Indexes all supported source files in the repository."""
+        """Indexes all supported source files in the repository across all languages."""
         self.symbols.clear()
         self.file_symbols.clear()
         self.call_graph.clear()
@@ -66,35 +91,44 @@ class ASTEngine:
         self.imports_map.clear()
         self.file_lines.clear()
 
-        py_files = []
+        source_files = []
         for root, dirs, files in os.walk(self.repo_path):
-            dirs[:] = [d for d in dirs if d not in (".git", "__pycache__", "venv", ".venv", "node_modules")]
+            dirs[:] = [d for d in dirs if d not in (".git", "__pycache__", "venv", ".venv", "node_modules", "dist", "build", "target", "vendor")]
             for file in files:
-                if file.endswith(".py"):
+                _, ext = os.path.splitext(file)
+                if ext.lower() in self.SUPPORTED_EXTENSIONS:
                     full_p = os.path.join(root, file)
                     rel_p = os.path.relpath(full_p, self.repo_path).replace("\\", "/")
-                    py_files.append((full_p, rel_p))
+                    source_files.append((full_p, rel_p, ext.lower()))
 
-        for full_p, rel_p in py_files:
+        for full_p, rel_p, ext in source_files:
             try:
                 with open(full_p, "r", encoding="utf-8", errors="replace") as f:
                     content = f.read()
                 lines = content.splitlines()
                 self.file_lines[rel_p] = lines
-                tree = ast.parse(content, filename=rel_p)
-                self._index_ast_tree(rel_p, tree, lines)
-            except Exception as e:
-                # Store fallback for non-parseable files
+                
+                lang = self.SUPPORTED_EXTENSIONS.get(ext, "unknown")
+                if ext == ".py":
+                    try:
+                        tree = ast.parse(content, filename=rel_p)
+                        self._index_ast_tree(rel_p, tree, lines)
+                    except Exception:
+                        self._index_polyglot_source(rel_p, lines, "python")
+                else:
+                    self._index_polyglot_source(rel_p, lines, lang)
+            except Exception:
                 pass
 
         self.indexed = True
         return {
-            "indexed_files": len(py_files),
+            "indexed_files": len(source_files),
             "total_symbols": len(self.symbols),
             "call_connections": sum(len(v) for v in self.call_graph.values())
         }
 
     def _index_ast_tree(self, rel_path: str, tree: ast.AST, lines: List[str]):
+        """Specialized AST parser for Python source files."""
         self.file_symbols[rel_path] = []
         self.imports_map[rel_path] = {}
 
@@ -111,8 +145,6 @@ class ASTEngine:
                     self.imports_map[rel_path][name] = f"{mod}.{alias.name}" if mod else alias.name
 
         # 2. Index Classes & Functions
-        current_class = None
-
         class SymbolVisitor(ast.NodeVisitor):
             def __init__(self, engine, path, code_lines):
                 self.engine = engine
@@ -136,7 +168,8 @@ class ASTEngine:
                     docstring=doc,
                     parameters=[],
                     parent=self.current_scope[-1] if self.current_scope else None,
-                    code_slice=code_snippet
+                    code_slice=code_snippet,
+                    language="python"
                 )
                 self.engine.symbols[full_name] = sym
                 self.engine.file_symbols[self.path].append(full_name)
@@ -146,40 +179,39 @@ class ASTEngine:
                 self.current_scope.pop()
 
             def visit_FunctionDef(self, node: ast.FunctionDef):
-                self._record_func(node)
+                self._handle_func(node)
 
             def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-                self._record_func(node)
+                self._handle_func(node)
 
-            def _record_func(self, node):
-                parent_cls = self.current_scope[-1] if self.current_scope else None
-                kind = "method" if parent_cls else "function"
-                scoped_name = f"{parent_cls}.{node.name}" if parent_cls else node.name
+            def _handle_func(self, node):
+                parent_class = self.current_scope[-1] if self.current_scope else None
+                kind = "method" if parent_class else "function"
+                scoped_name = f"{parent_class}.{node.name}" if parent_class else node.name
                 full_name = f"{self.path}::{scoped_name}"
+
                 doc = ast.get_docstring(node)
                 start_l = getattr(node, 'lineno', 1)
                 end_l = getattr(node, 'end_lineno', start_l)
-                params = [arg.arg for arg in node.args.args]
                 code_snippet = "\n".join(self.lines[start_l - 1:end_l])
 
+                params = [arg.arg for arg in node.args.args]
+
                 sym = SymbolInfo(
-                    name=node.name,
+                    name=scoped_name,
                     kind=kind,
                     file_path=self.path,
                     start_line=start_l,
                     end_line=end_l,
                     docstring=doc,
                     parameters=params,
-                    parent=parent_cls,
-                    code_slice=code_snippet
+                    parent=parent_class,
+                    code_slice=code_snippet,
+                    language="python"
                 )
                 self.engine.symbols[full_name] = sym
                 self.engine.file_symbols[self.path].append(full_name)
-
-                # Record calls within this function
-                caller_key = full_name
-                if caller_key not in self.engine.call_graph:
-                    self.engine.call_graph[caller_key] = set()
+                self.engine.call_graph[full_name] = set()
 
                 for child in ast.walk(node):
                     if isinstance(child, ast.Call):
@@ -190,7 +222,7 @@ class ASTEngine:
                             callee_name = child.func.attr
 
                         if callee_name:
-                            self.engine.call_graph[caller_key].add(callee_name)
+                            self.engine.call_graph[full_name].add(callee_name)
                             if callee_name not in self.engine.reverse_call_graph:
                                 self.engine.reverse_call_graph[callee_name] = set()
                             call_line = getattr(child, 'lineno', start_l)
@@ -203,68 +235,155 @@ class ASTEngine:
         visitor = SymbolVisitor(self, rel_path, lines)
         visitor.visit(tree)
 
-    def find_symbol(self, name: str) -> Optional[Dict[str, Any]]:
-        """Finds symbol by exact or short name."""
+    def _index_polyglot_source(self, rel_path: str, lines: List[str], language: str):
+        """Universal parser extracting classes, functions, structs, and calls across polyglot files."""
+        self.file_symbols[rel_path] = []
+        self.imports_map[rel_path] = {}
+
+        # Patterns for various languages
+        patterns = {
+            # JS/TS: function foo(), const foo = () =>, class Bar, interface Baz
+            "javascript": [
+                (r'^(?:export\s+)?(?:async\s+)?function\s+(?P<name>[a-zA-Z0-9_$]+)\s*\(', "function"),
+                (r'^(?:export\s+)?(?:const|let|var)\s+(?P<name>[a-zA-Z0-9_$]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>', "function"),
+                (r'^(?:export\s+)?(?:default\s+)?class\s+(?P<name>[a-zA-Z0-9_$]+)', "class"),
+            ],
+            "typescript": [
+                (r'^(?:export\s+)?(?:async\s+)?function\s+(?P<name>[a-zA-Z0-9_$]+)\s*\(', "function"),
+                (r'^(?:export\s+)?(?:const|let|var)\s+(?P<name>[a-zA-Z0-9_$]+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s*)?\([^)]*\)\s*=>', "function"),
+                (r'^(?:export\s+)?(?:default\s+)?class\s+(?P<name>[a-zA-Z0-9_$]+)', "class"),
+                (r'^(?:export\s+)?interface\s+(?P<name>[a-zA-Z0-9_$]+)', "interface"),
+                (r'^(?:export\s+)?type\s+(?P<name>[a-zA-Z0-9_$]+)', "type"),
+            ],
+            # Java / C#
+            "java": [
+                (r'^\s*(?:public|private|protected|static|final|\s)+\s+class\s+(?P<name>[a-zA-Z0-9_]+)', "class"),
+                (r'^\s*(?:public|private|protected|static|final|\s)+\s+interface\s+(?P<name>[a-zA-Z0-9_]+)', "interface"),
+                (r'^\s*(?:public|private|protected|static|final|\s)+[\w<>\[\]]+\s+(?P<name>[a-zA-Z0-9_]+)\s*\([^)]*\)\s*(?:throws\s+[\w,\s]+)?\s*\{', "method"),
+            ],
+            "csharp": [
+                (r'^\s*(?:public|private|protected|internal|static|\s)+\s+class\s+(?P<name>[a-zA-Z0-9_]+)', "class"),
+                (r'^\s*(?:public|private|protected|internal|static|\s)+\s+interface\s+(?P<name>[a-zA-Z0-9_]+)', "interface"),
+                (r'^\s*(?:public|private|protected|internal|static|\s)+[\w<>\[\]]+\s+(?P<name>[a-zA-Z0-9_]+)\s*\([^)]*\)\s*\{', "method"),
+            ],
+            # Go: func FunctionName(), func (r *Receiver) MethodName()
+            "go": [
+                (r'^func\s+(?:\([^)]+\)\s+)?(?P<name>[a-zA-Z0-9_]+)\s*\(', "function"),
+                (r'^type\s+(?P<name>[a-zA-Z0-9_]+)\s+struct\s*\{', "struct"),
+                (r'^type\s+(?P<name>[a-zA-Z0-9_]+)\s+interface\s*\{', "interface"),
+            ],
+            # Rust: fn foo(), struct Bar, enum Baz, impl Foo
+            "rust": [
+                (r'^\s*(?:pub(?:\(crate\))?\s+)?(?:async\s+)?fn\s+(?P<name>[a-zA-Z0-9_]+)', "function"),
+                (r'^\s*(?:pub(?:\(crate\))?\s+)?struct\s+(?P<name>[a-zA-Z0-9_]+)', "struct"),
+                (r'^\s*(?:pub(?:\(crate\))?\s+)?enum\s+(?P<name>[a-zA-Z0-9_]+)', "enum"),
+            ],
+            # C / C++
+            "c": [
+                (r'^\s*(?:[\w*]+\s+)+(?P<name>[a-zA-Z0-9_]+)\s*\([^)]*\)\s*\{', "function"),
+                (r'^\s*struct\s+(?P<name>[a-zA-Z0-9_]+)\s*\{', "struct"),
+            ],
+            "cpp": [
+                (r'^\s*(?:[\w*:<>]+\s+)+(?P<name>[a-zA-Z0-9_]+)\s*\([^)]*\)\s*(?:const)?\s*\{', "function"),
+                (r'^\s*class\s+(?P<name>[a-zA-Z0-9_]+)', "class"),
+                (r'^\s*struct\s+(?P<name>[a-zA-Z0-9_]+)', "struct"),
+            ],
+            # Ruby / PHP
+            "ruby": [
+                (r'^\s*def\s+(?P<name>[a-zA-Z0-9_!?]+)', "function"),
+                (r'^\s*class\s+(?P<name>[a-zA-Z0-9_:]+)', "class"),
+            ],
+            "php": [
+                (r'^\s*(?:public|private|protected|static|\s)*function\s+(?P<name>[a-zA-Z0-9_]+)\s*\(', "function"),
+                (r'^\s*(?:abstract|final|\s)*class\s+(?P<name>[a-zA-Z0-9_]+)', "class"),
+            ]
+        }
+
+        lang_rules = patterns.get(language, patterns.get("javascript", []))
+
+        current_symbol = None
+        for i, line in enumerate(lines):
+            line_no = i + 1
+            trimmed = line.strip()
+
+            for regex_str, kind in lang_rules:
+                match = re.search(regex_str, trimmed)
+                if match:
+                    sym_name = match.group("name")
+                    full_name = f"{rel_path}::{sym_name}"
+
+                    # Estimate span: next 20 lines or until next symbol
+                    end_line = min(len(lines), line_no + 25)
+                    code_snippet = "\n".join(lines[line_no - 1:end_line])
+
+                    sym = SymbolInfo(
+                        name=sym_name,
+                        kind=kind,
+                        file_path=rel_path,
+                        start_line=line_no,
+                        end_line=end_line,
+                        docstring="",
+                        parameters=[],
+                        parent=None,
+                        code_slice=code_snippet,
+                        language=language
+                    )
+                    self.symbols[full_name] = sym
+                    self.file_symbols[rel_path].append(full_name)
+                    self.call_graph[full_name] = set()
+                    current_symbol = full_name
+                    break
+
+            # Track potential function calls in line: identifier(...)
+            call_matches = re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', trimmed)
+            for callee in call_matches:
+                if callee not in ("if", "for", "while", "switch", "catch", "return", "function", "sizeof"):
+                    if current_symbol:
+                        self.call_graph[current_symbol].add(callee)
+                    if callee not in self.reverse_call_graph:
+                        self.reverse_call_graph[callee] = set()
+                    self.reverse_call_graph[callee].add((rel_path, current_symbol or "<top-level>", line_no))
+
+    def find_symbol(self, symbol_name: str) -> Optional[Dict[str, Any]]:
+        """Finds primary symbol matching symbol_name across all languages."""
+        matches = self.find_all_symbols(symbol_name)
+        return matches[0] if matches else None
+
+    def find_all_symbols(self, symbol_name: str) -> List[Dict[str, Any]]:
+        """Finds all symbols matching symbol_name across all languages."""
         if not self.indexed:
             self.index_repository()
 
-        # Check full key
-        if name in self.symbols:
-            return self.symbols[name].to_dict()
+        matches = []
+        short_query = symbol_name.split("::")[-1].split(".")[-1]
 
-        # Check short name match
-        for key, sym in self.symbols.items():
-            if sym.name == name or key.endswith(f"::{name}") or key.endswith(f".{name}"):
-                return sym.to_dict()
+        for full_key, info in self.symbols.items():
+            if info.name == symbol_name or info.name.endswith(f".{short_query}") or info.name == short_query:
+                matches.append(info.to_dict())
 
-        return None
+        return matches
 
-    def find_callers(self, name: str) -> List[Dict[str, Any]]:
-        """Finds all functions/files calling the specified symbol."""
+    def find_callers(self, symbol_name: str) -> List[Dict[str, Any]]:
+        """Finds all cross-file callers of the given function/symbol in any language."""
         if not self.indexed:
             self.index_repository()
 
+        short_name = symbol_name.split("::")[-1].split(".")[-1]
         callers = []
-        short_name = name.split("::")[-1].split(".")[-1]
-        
+
         if short_name in self.reverse_call_graph:
-            for file_path, caller_name, line in self.reverse_call_graph[short_name]:
+            for caller_file, caller_symbol, line in self.reverse_call_graph[short_name]:
                 callers.append({
-                    "file": file_path,
-                    "caller_symbol": caller_name,
+                    "file": caller_file,
+                    "caller_file": caller_file,
+                    "caller_symbol": caller_symbol,
                     "line": line
                 })
 
-        return sorted(callers, key=lambda x: (x["file"], x["line"]))
-
-    def find_callees(self, symbol_key: str) -> List[str]:
-        """Finds all symbols called by this symbol."""
-        if not self.indexed:
-            self.index_repository()
-
-        for key, sym in self.symbols.items():
-            if key == symbol_key or sym.name == symbol_key or key.endswith(f"::{symbol_key}"):
-                return list(self.call_graph.get(key, set()))
-        return []
-
-    def find_references(self, symbol_name: str) -> List[Dict[str, Any]]:
-        """Finds all text and AST references of a symbol across repository files."""
-        if not self.indexed:
-            self.index_repository()
-
-        refs = []
-        for file_p, lines in self.file_lines.items():
-            for line_no, line in enumerate(lines, 1):
-                if symbol_name in line:
-                    refs.append({
-                        "file": file_p,
-                        "line": line_no,
-                        "line_content": line.strip()
-                    })
-        return refs
+        return callers
 
     def find_related_tests(self, symbol_name: str, file_path: Optional[str] = None) -> List[str]:
-        """Finds test files and test methods that verify the given symbol or file."""
+        """Finds test files and test methods that verify the given symbol or file in any language."""
         if not self.indexed:
             self.index_repository()
 
@@ -274,14 +393,22 @@ class ASTEngine:
         # 1. Direct callers in test files
         callers = self.find_callers(short_name)
         for c in callers:
-            if "test" in c["file"].lower() or "tests" in c["file"].lower():
-                related_tests.add(f"{c['file']}::{c['caller_symbol']}")
+            c_file = c["caller_file"].lower()
+            if "test" in c_file or "spec" in c_file or "__tests__" in c_file:
+                related_tests.add(f"{c['caller_file']}::{c['caller_symbol']}")
 
-        # 2. Test files named similarly
+        # 2. Test files named similarly across frameworks
         if file_path:
             base = os.path.splitext(os.path.basename(file_path))[0]
             for f in self.file_lines.keys():
-                if f"test_{base}" in f.lower() or f"{base}_test" in f.lower():
+                f_lower = f.lower()
+                if (
+                    f"test_{base}" in f_lower or
+                    f"{base}_test" in f_lower or
+                    f"{base}.test" in f_lower or
+                    f"{base}.spec" in f_lower or
+                    f"test{base}" in f_lower
+                ):
                     related_tests.add(f)
 
         return sorted(list(related_tests))
@@ -293,68 +420,66 @@ class ASTEngine:
         end_line: Optional[int] = None,
         symbol_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Extracts precise code slice and enclosing symbol scope."""
+        """Extracts precise code slice and enclosing symbol scope in any language."""
         if not self.indexed:
             self.index_repository()
 
         rel_p = file_path.replace("\\", "/")
         if rel_p not in self.file_lines:
-            # Try finding matching file
-            for p in self.file_lines:
-                if p.endswith(rel_p):
-                    rel_p = p
-                    break
-
-        if rel_p not in self.file_lines:
-            return {"error": f"File '{file_path}' not found in index."}
+            return {"error": f"File '{file_path}' not indexed in repository."}
 
         lines = self.file_lines[rel_p]
         total_lines = len(lines)
 
         if symbol_name:
-            sym = self.find_symbol(symbol_name)
-            if sym and sym["file_path"] == rel_p:
-                start_line = sym["start_line"]
-                end_line = sym["end_line"]
+            matches = [s for s in self.symbols.values() if s.file_path == rel_p and s.name == symbol_name]
+            if matches:
+                target = matches[0]
+                return {
+                    "file": rel_p,
+                    "symbol": target.name,
+                    "kind": target.kind,
+                    "start_line": target.start_line,
+                    "end_line": target.end_line,
+                    "code": target.code_slice,
+                    "language": target.language
+                }
 
-        s = max(1, start_line) if start_line else 1
-        e = min(total_lines, end_line) if end_line else total_lines
+        s_line = max(1, start_line or 1)
+        e_line = min(total_lines, end_line or min(total_lines, s_line + 40))
 
-        numbered = [f"{i:4d} | {lines[i - 1]}" for i in range(s, e + 1)]
+        slice_text = "\n".join([f"{idx + 1:4d} | {lines[idx]}" for idx in range(s_line - 1, e_line)])
 
-        # Determine enclosing symbol
-        enclosing_symbol = None
-        for key in self.file_symbols.get(rel_p, []):
-            sym = self.symbols[key]
-            if sym.start_line <= s and sym.end_line >= e:
-                enclosing_symbol = sym.name
+        # Enclosing symbol
+        enclosing = None
+        for sym_key in self.file_symbols.get(rel_p, []):
+            sym = self.symbols[sym_key]
+            if sym.start_line <= s_line and sym.end_line >= e_line:
+                enclosing = sym.name
 
         return {
-            "file_path": rel_p,
-            "start_line": s,
-            "end_line": e,
+            "file": rel_p,
+            "start_line": s_line,
+            "end_line": e_line,
             "total_lines": total_lines,
-            "enclosing_symbol": enclosing_symbol,
-            "code_slice": "\n".join(numbered)
+            "enclosing_symbol": enclosing,
+            "code_slice": slice_text
         }
 
     def analyze_blast_radius(self, symbol_name: str) -> Dict[str, Any]:
-        """Calculates affected callers, affected files, test coverage, and risk rating."""
+        """Computes the blast radius and regression risk rating of modifying a symbol across all languages."""
         if not self.indexed:
             self.index_repository()
 
         sym = self.find_symbol(symbol_name)
+
         callers = self.find_callers(symbol_name)
-        
-        affected_files = set()
+        affected_files = set(c["caller_file"] for c in callers)
         if sym:
             affected_files.add(sym["file_path"])
-        for c in callers:
-            affected_files.add(c["file"])
 
         related_tests = self.find_related_tests(symbol_name, sym["file_path"] if sym else None)
 
-        # Risk scoring
         caller_count = len(callers)
         file_count = len(affected_files)
         test_count = len(related_tests)
